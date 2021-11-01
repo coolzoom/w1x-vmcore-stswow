@@ -1,0 +1,39 @@
+name: 🏗️  Build
+on: [push, pull_request]
+
+jobs:
+  test_suite:
+    name: Run test suite
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        base_image: ['raspios_lite:2021-05-07', 'raspbian_lite:2020-02-13']
+
+    steps:
+      - name: Checkout vmangos
+        uses: actions/checkout@v2
+
+      - name: Run test suite in chroot environment
+        uses: pguyot/arm-runner-action@v1
+        id: arm_runner_tests
+        with:
+          image_additional_mb: 20000
+          base_image: ${{ matrix.base_image }}
+          cpu: 'cortex-a8'
+          copy_repository_path: /home/pi/core
+          optimize_image: no
+          commands: |
+            sudo useradd pi || true
+            sudo sh -c "[ ! -f /etc/sudoers.d/010_pi-nopasswd ] && usermod -aG sudo pi && echo 'pi ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/010_pi-nopasswd || true"
+            sudo chown -hR pi:pi /home/pi/core
+            sudo apt-get --allow-releaseinfo-change update
+            sudo apt-get update -y         
+            apt install build-essential mariadb-server cmake libace-dev libtbb-dev libmariadb-dev libssl-dev -y
+            cd /home/pi/core
+            sudo mkdir build
+            sudo mkdir _install
+            cd build
+            cmake ../ -DCMAKE_INSTALL_PREFIX=../_install -DWITH_WARNINGS=0 -DUSE_EXTRACTORS=1
+            make -j2
+            make install

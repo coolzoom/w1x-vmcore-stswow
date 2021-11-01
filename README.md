@@ -11,6 +11,9 @@ This project is an independent continuation of the Elysium / LightsHope codebase
 - 1.8.4.4878
 - 1.7.1.4695
 
+### Software requirement
+apt install mariadb-server cmake libace-dev libtbb-dev libmariadb-dev libssl-dev
+
 ### Project guidelines
 - Accuracy: The point of an emulator is to recreate the functionality of that which it is emulating as closely as possible. Therefore any custom behaviour should be behind a config option and off by default.
 - DB Scripting: Content should be separate from the core itself, so hardcoding scripts should be avoided where possible. When database scripting functionality is insuficient, we simply expand it.
