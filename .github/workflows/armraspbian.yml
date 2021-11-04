@@ -1,4 +1,4 @@
-name: Arm Raspbian Buster
+name: VMaNGOS Arm(Raspbian Buster for raspberry pi)
 
 on:
   push:
