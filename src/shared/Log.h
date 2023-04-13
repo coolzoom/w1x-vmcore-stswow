@@ -116,10 +116,17 @@ enum Color
     COLOR_COUNT
 };
 
+constexpr Color g_logColors[] = {
+    RED,    // error
+    RESET,  // minimal
+    RESET,  // basic
+    YELLOW, // detail
+    BLUE    // debug
+};
+
 enum LogType
 {
     LOG_BASIC,
-    LOG_WORLDPACKET,
     LOG_CHAT,
     LOG_BG,
     LOG_CHAR,
@@ -163,12 +170,9 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, std::m
         // for player-specific messages
         void Player(WorldSession const* session, LogType logType, LogLevel logLevel, char const* format, ...) ATTR_PRINTF(5, 6);
         void Player(WorldSession const* session, LogType logType, char const* subTytpe, LogLevel logLevel, char const* format, ...) ATTR_PRINTF(6, 7);
+        void OutWardenPlayer(WorldSession const* session, LogType logType, LogLevel logLevel, char const* format, ...) ATTR_PRINTF(5, 6);
         void Player(uint32 accountId, LogType logType, LogLevel logLevel, char const* format, ...) ATTR_PRINTF(5, 6);
         void Player(uint32 accountId, LogType logType, char const* subTytpe, LogLevel logLevel, char const* format, ...) ATTR_PRINTF(6, 7);
-
-        void outWorldPacketDump(ACE_HANDLE socketHandle, uint32 opcode,
-                                char const* opcodeName,
-                                ByteBuffer const* packet, bool incoming);
 
         bool IsSmartLog(uint32 entry, uint32 guid) const;
 
@@ -190,6 +194,8 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, std::m
     private:
         void OutConsole(LogType logType, LogLevel logLevel, std::string const& str) const;
         void OutFile(LogType logType, LogLevel logLevel, std::string const& str) const;
+        void PlayerLogHeaderToConsole(uint32 accountId, WorldSession const* session, LogType logType, char const* subType);
+        void PlayerLogHeaderToFile(uint32 accountId, WorldSession const* session, LogType logType, char const* subType);
 
         void SetColor(FILE* where, Color color) const;
         void ResetColor(FILE* where) const;
@@ -209,6 +215,7 @@ class Log : public MaNGOS::Singleton<Log, MaNGOS::ClassLevelLockable<Log, std::m
         uint16 const m_defaultColor;
 
         // include timestamp in console output
+        bool m_wardenDebug;
         bool m_includeTime;
         uint32 m_logFilter;
 

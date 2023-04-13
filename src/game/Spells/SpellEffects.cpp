@@ -1623,15 +1623,6 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                     }
                     return;
                 }
-                case 23852: // Jubling Cooldown
-                {
-                    // Trigger 7 day cooldown
-                    SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(23851);
-                    ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(19462);
-                    if (spellInfo && itemProto)
-                        unitTarget->AddCooldown(*spellInfo, itemProto);
-                    return;
-                }
                 case 29518: // Sillithus Flag Click (DND)
                 {
                     // Also mark player with pvp on
@@ -2755,6 +2746,15 @@ void Spell::SendLoot(ObjectGuid guid, LootType loottype, LockType lockType)
                         gameObjTarget->UseDoorOrButton(0, true);
                     return;
                 }
+                else if (gameObjTarget->GetEntry() == 178559) // Larva Spewer
+                {
+                    // Alternative state = destroyed
+                    gameObjTarget->SetGoState(GO_STATE_ACTIVE_ALTERNATIVE);
+                    // Save state
+                    if (gameObjTarget->GetInstanceData())
+                        gameObjTarget->GetInstanceData()->SetData(0 /*TYPE_LARVA_SPEWER*/, 3 /*DONE*/);
+                    return;
+                }
                 sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Spell::SendLoot unhandled locktype %u for GameObject trap (entry %u) for spell %u.", lockType, gameObjTarget->GetEntry(), m_spellInfo->Id);
                 return;
             default:
@@ -3227,12 +3227,11 @@ void Spell::EffectDispel(SpellEffectIndex effIdx)
         {
             int32 count = successList.size();
             WorldPacket data(SMSG_SPELLDISPELLOG, 8 + 8 + 4 + count * 4);
-#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_8_4
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_12_1
             data << unitTarget->GetPackGUID();              // Victim GUID
             data << m_caster->GetPackGUID();                // Caster GUID
 #else
             data << unitTarget->GetGUID();              // Victim GUID
-            data << m_caster->GetGUID();                // Caster GUID
 #endif
             data << uint32(count);
             for (const auto& j : successList)
@@ -3383,7 +3382,7 @@ void Spell::EffectSummonWild(SpellEffectIndex effIdx)
 
     float radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[effIdx]));
     int32 duration = m_spellInfo->GetDuration();
-    TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_COMBAT_OR_DEAD_DESPAWN;
+    TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_DEATH_AND_DEAD_DESPAWN;
 
     int32 amount = damage > 0 ? damage : 1;
 
@@ -3602,9 +3601,6 @@ void Spell::EffectSummonGuardian(SpellEffectIndex effIdx)
         spawnCreature->AIM_Initialize();
         spawnCreature->LoadCreatureAddon();
 
-        if (m_casterUnit->IsPvP())
-            spawnCreature->SetPvP(true);
-
         map->Add((Creature*)spawnCreature);
         m_casterUnit->AddGuardian(spawnCreature);
 
@@ -3675,7 +3671,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex effIdx)
 
     uint32 creatureEntry = m_spellInfo->EffectMiscValue[effIdx];
 
-    Creature* pMinion = pCaster->SummonPossessedMinion(creatureEntry, m_spellInfo->Id, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation());
+    Creature* pMinion = pCaster->SummonPossessedMinion(creatureEntry, m_spellInfo->Id, m_targets.m_destX, m_targets.m_destY, m_targets.m_destZ, m_caster->GetOrientation(), m_spellInfo->GetDuration());
     if (!pMinion)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Spell::EffectSummonPossessed: creature entry %u for spell %u could not be summoned.", creatureEntry, m_spellInfo->Id);
@@ -3932,7 +3928,7 @@ void Spell::EffectSummonPet(SpellEffectIndex effIdx)
 
 ObjectGuid Unit::EffectSummonPet(uint32 spellId, uint32 petEntry, uint32 petLevel)
 {
-    if (!UnsummonOldPetBeforeNewSummon(petEntry))
+    if (!UnsummonOldPetBeforeNewSummon(petEntry, true))
         return ObjectGuid();
 
     CreatureInfo const* cInfo = petEntry ? sCreatureStorage.LookupEntry<CreatureInfo>(petEntry) : nullptr;
@@ -4556,6 +4552,15 @@ void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
                     m_caster->CastSpell(unitTarget, 22682, true);
                     return;
                 }
+                case 23853: // Jubling Cooldown
+                {
+                    // Trigger 7 day cooldown
+                    SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(23851);
+                    ItemPrototype const* itemProto = sObjectMgr.GetItemPrototype(19462);
+                    if (spellInfo && itemProto)
+                        unitTarget->AddCooldown(*spellInfo, itemProto);
+                    return;
+                }
                 case 24194:                                 // Uther's Tribute
                 case 24195:                                 // Grom's Tribute
                 {
@@ -4903,32 +4908,36 @@ void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
                             {105, {27248, 27513}}   // Thunderbluff
                     };
 
-                    uint32 AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][0];
-                    uint32 AdoredOrBroken = 26680;      // Adored as default.
+                    auto itr = loveAirSpellsMapForFaction.find(m_caster->GetFactionTemplateId());
+                    if (itr == loveAirSpellsMapForFaction.end())
+                        return;
 
-                    if (loveAirSpellsMapForFaction.count(m_caster->GetFactionTemplateId()))
+                    if (itr->second.size() < 2)
+                        return;
+
+                    uint32 adorationOrFriendship = itr->second[0];
+                    uint32 adoredOrBroken = 26680;      // Adored as default.
+
+                    if (!urand(0, 5))               // Sets 1 in 6 chance to cast Heartbroken.
                     {
-                        if (!urand(0, 5))               // Sets 1 in 6 chance to cast Heartbroken.
-                        {
-                            AdoredOrBroken = 26898;     // Heartbroken.
-                        }
-                        else if (!unitTarget->HasAura(26680))
-                        {
-                            AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][1];    // Pledge of Adoration for related faction.
-                        }
-                        else
-                        {
-                            AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][0];    // Pledge of Friendship for related faction.
-                        }
-
-                        unitTarget->CastSpell(unitTarget, AdoredOrBroken, false);           // Cast Adored or Broken.
-
-                        if (AdoredOrBroken == 26898)
-                            return;
-
-                        unitTarget->CastSpell(unitTarget, AdorationOrFriendship, true);     // Get a Pledge.
-                        unitTarget->CastSpell(unitTarget, 26879, true);                     // Remove Amorous.
+                        adoredOrBroken = 26898;     // Heartbroken.
                     }
+                    else if (!unitTarget->HasAura(26680))
+                    {
+                        adorationOrFriendship = itr->second[1];    // Pledge of Adoration for related faction.
+                    }
+                    else
+                    {
+                        adorationOrFriendship = itr->second[0];    // Pledge of Friendship for related faction.
+                    }
+
+                    unitTarget->CastSpell(unitTarget, adoredOrBroken, false);           // Cast Adored or Broken.
+
+                    if (adoredOrBroken == 26898)
+                        return;
+
+                    unitTarget->CastSpell(unitTarget, adorationOrFriendship, true);     // Get a Pledge.
+                    unitTarget->CastSpell(unitTarget, 26879, true);                     // Remove Amorous.
                     return;
                 }
                 case 26663:                     // Valentine (Citizens)
@@ -4953,32 +4962,36 @@ void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
                             {875, {27520, 27503}}   // Ironforge gnomes
                     };
 
-                    uint32 AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][0];
-                    uint32 AdoredOrBroken = 26680;      // Adored as default.
+                    auto itr = loveAirSpellsMapForFaction.find(m_caster->GetFactionTemplateId());
+                    if (itr == loveAirSpellsMapForFaction.end())
+                        return;
 
-                    if (loveAirSpellsMapForFaction.count(m_caster->GetFactionTemplateId()))
+                    if (itr->second.size() < 2)
+                        return;
+
+                    uint32 adorationOrFriendship = itr->second[0];
+                    uint32 adoredOrBroken = 26680;      // Adored as default.
+
+                    if (!urand(0, 5))               // Sets 1 in 6 chance to cast Heartbroken.
                     {
-                        if (!urand(0, 5))               // Sets 1 in 6 chance to cast Heartbroken.
-                        {
-                            AdoredOrBroken = 26898;     // Heartbroken.
-                        }
-                        else if (!unitTarget->HasAura(26680))
-                        {
-                            AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][1];    // Gift of Adoration for related faction
-                        }
-                        else
-                        {
-                            AdorationOrFriendship = loveAirSpellsMapForFaction[m_caster->GetFactionTemplateId()][0];    // Gift of Friendship for related faction
-                        }
-
-                        unitTarget->CastSpell(unitTarget, AdoredOrBroken, false);           // Cast Adored or Broken.
-
-                        if (AdoredOrBroken == 26898)
-                            return;
-
-                        unitTarget->CastSpell(unitTarget, AdorationOrFriendship, true);     // Get a Pledge.
-                        unitTarget->CastSpell(unitTarget, 26879, true);                     // Remove Amorous.
+                        adoredOrBroken = 26898;     // Heartbroken.
                     }
+                    else if (!unitTarget->HasAura(26680))
+                    {
+                        adorationOrFriendship = itr->second[1];    // Gift of Adoration for related faction
+                    }
+                    else
+                    {
+                        adorationOrFriendship = itr->second[0];    // Gift of Friendship for related faction
+                    }
+
+                    unitTarget->CastSpell(unitTarget, adoredOrBroken, false);           // Cast Adored or Broken.
+
+                    if (adoredOrBroken == 26898)
+                        return;
+
+                    unitTarget->CastSpell(unitTarget, adorationOrFriendship, true);     // Get a Pledge.
+                    unitTarget->CastSpell(unitTarget, 26879, true);                     // Remove Amorous.
                     return;
                 }
                 case 27654:                         // Love is in the Air Test
@@ -5405,11 +5418,15 @@ void Spell::EffectSanctuary(SpellEffectIndex effIdx)
     bool noGuards = true;
 
     unitTarget->InterruptSpellsCastedOnMe(true);
-    unitTarget->CombatStop();
+    unitTarget->InterruptAttacksOnMe(0.0f, guardCheck);
+    unitTarget->m_lastSanctuaryTime = WorldTimer::getMSTime();
 
     // Flask of Petrification does not cause mobs to stop attacking.
-    if (!m_spellInfo->HasAttribute(SPELL_ATTR_EX2_FOOD_BUFF))
+    if (m_spellInfo->IsFitToFamily<SPELLFAMILY_ROGUE, CF_ROGUE_VANISH>())
     {
+        // Vanish allows to remove all threat and cast regular stealth so other spells can be used
+        unitTarget->CombatStop();
+
         HostileReference* pReference = unitTarget->GetHostileRefManager().getFirst();
         while (pReference)
         {
@@ -5424,22 +5441,12 @@ void Spell::EffectSanctuary(SpellEffectIndex effIdx)
 
             pReference = pNextRef;
         }
-    }
-    
-    unitTarget->m_lastSanctuaryTime = WorldTimer::getMSTime();
 
-    // Vanish allows to remove all threat and cast regular stealth so other spells can be used
-    if (m_spellInfo->IsFitToFamily<SPELLFAMILY_ROGUE, CF_ROGUE_VANISH>())
-    {
-        unitTarget->RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
-        unitTarget->InterruptAttacksOnMe(0.0f, guardCheck);
-
-        if (Player* pPlayer = m_caster->ToPlayer())
-        {
-            if (noGuards)
-                pPlayer->SetCannotBeDetectedTimer(1000);
-        }
+        if (noGuards && unitTarget->IsPlayer())
+            static_cast<Player*>(unitTarget)->SetCannotBeDetectedTimer(1000);
     }
+    else
+        unitTarget->DoResetThreat();
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(unitTarget->GetObjectGuid()));
 }

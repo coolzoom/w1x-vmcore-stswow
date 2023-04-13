@@ -75,7 +75,7 @@ WorldSession::WorldSession(uint32 id, WorldSocket *sock, AccountTypes sec, time_
     m_accountFlags(0), m_idleTime(WorldTimer::getMSTime()), _player(nullptr), m_socket(sock), m_security(sec), m_accountId(id), m_logoutTime(0), m_inQueue(false),
     m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false), m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)),
     m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)), m_latency(0), m_tutorialState(TUTORIALDATA_UNCHANGED), m_warden(nullptr), m_cheatData(nullptr),
-    m_bot(nullptr), m_clientOS(CLIENT_OS_UNKNOWN), m_gameBuild(0),
+    m_bot(nullptr), m_clientOS(CLIENT_OS_UNKNOWN), m_clientPlatform(CLIENT_PLATFORM_UNKNOWN), m_gameBuild(0),
     m_charactersCount(10), m_characterMaxLevel(0), m_lastPubChannelMsgTime(0), m_moveRejectTime(0), m_masterPlayer(nullptr)
 {
     if (sock)
@@ -205,11 +205,8 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 #endif                                                  // !_DEBUG
 
     //sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[%s]Send packet : %u|0x%x (%s)", GetPlayerName(), packet->GetOpcode(), packet->GetOpcode(), LookupOpcodeName(packet->GetOpcode()));
-    if (Player* player = GetPlayer())
-    {
-        DEBUG_UNIT_IF(packet->GetOpcode() != SMSG_MESSAGECHAT && packet->GetOpcode() != SMSG_WARDEN_DATA, player,
-            DEBUG_PACKETS_SEND, "[%s] Send packet : %u/0x%x (%s)", player->GetName(), packet->GetOpcode(), packet->GetOpcode(), LookupOpcodeName(packet->GetOpcode()));
-    }
+    if (m_sniffFile)
+        m_sniffFile->WritePacket(*packet, false, time(nullptr));
 
     if (m_socket->SendPacket(*packet) == -1)
         m_socket->CloseSocket();
@@ -218,7 +215,10 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 /// Add an incoming packet to the queue
 void WorldSession::QueuePacket(WorldPacket* newPacket)
 {
-    if (_player && IsMovementOpcode(newPacket->GetOpcode()))
+    if (m_sniffFile)
+        m_sniffFile->WritePacket(*newPacket, true, time(nullptr));
+
+    if (_player && MovementAnticheat::IsLoggedOpcode(newPacket->GetOpcode()))
         GetCheatData()->LogMovementPacket(true, *newPacket);
 
     OpcodeHandler const& opHandle = opcodeTable[newPacket->GetOpcode()];
@@ -467,6 +467,7 @@ void WorldSession::ClearIncomingPacketsByType(PacketProcessing type)
 void WorldSession::SetDisconnectedSession()
 {
     m_connected = false;
+    StopSniffing();
     sWorld.SetSessionDisconnected(this);
 }
 
@@ -501,37 +502,40 @@ void WorldSession::LogoutPlayer(bool Save)
         if (ObjectGuid lootGuid = GetPlayer()->GetLootGuid())
             DoLootRelease(lootGuid);
 
-        ///- If the player just died before logging out, make him appear as a ghost
-        if (inWorld && _player->GetDeathTimer())
+        if (inWorld)
         {
-            _player->GetHostileRefManager().deleteReferences();
-            _player->BuildPlayerRepop();
-            _player->RepopAtGraveyard();
+            ///- If the player just died before logging out, make him appear as a ghost
+            if (_player->GetDeathTimer())
+            {
+                _player->GetHostileRefManager().deleteReferences();
+                _player->BuildPlayerRepop();
+                _player->RepopAtGraveyard();
+            }
+            else if (_player->IsInCombat())
+            {
+                _player->CombatStop();
+                _player->GetHostileRefManager().setOnlineOfflineState(false);
+            }
+            else if (_player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
+            {
+                // this will kill character by SPELL_AURA_SPIRIT_OF_REDEMPTION
+                _player->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
+                //_player->SetDeathPvP(*); set at SPELL_AURA_SPIRIT_OF_REDEMPTION apply time
+                _player->KillPlayer();
+                _player->BuildPlayerRepop();
+                _player->RepopAtGraveyard();
+            }
+
+            _player->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_LEAVE_WORLD_CANCELS);
+
         }
-        else if (inWorld && _player->IsInCombat())
-        {
-            _player->CombatStop();
-            _player->GetHostileRefManager().setOnlineOfflineState(false);
-        }
-        else if (inWorld && _player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
-        {
-            // this will kill character by SPELL_AURA_SPIRIT_OF_REDEMPTION
-            _player->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
-            //_player->SetDeathPvP(*); set at SPELL_AURA_SPIRIT_OF_REDEMPTION apply time
-            _player->KillPlayer();
-            _player->BuildPlayerRepop();
-            _player->RepopAtGraveyard();
-        }
+        
 
         if (_player->IsInLFG())
             sWorld.GetLFGQueue().GetMessager().AddMessage([playerGuid = _player->GetObjectGuid()](LFGQueue* queue)
         {
             queue->RemovePlayerFromQueue(playerGuid, PLAYER_SYSTEM_LEAVE);
         });
-
-        //drop a flag if player is carrying it
-        if (BattleGround *bg = _player->GetBattleGround())
-            _player->LeaveBattleground(true);
 
         ///- Teleport to home if the player is in an invalid instance
         if (!_player->m_InstanceValid && !_player->IsGameMaster())
@@ -548,6 +552,22 @@ void WorldSession::LogoutPlayer(bool Save)
         {
             HandleMoveWorldportAckOpcode();
             sMapMgr.ExecuteSingleDelayedTeleport(_player); // Execute chain teleport if there are some
+        }
+
+        // drop the flag if player is carrying it
+        if (BattleGround *bg = _player->GetBattleGround())
+        {
+            _player->LeaveBattleground(true);
+
+            // check for teleports both before and after leaving bg
+            // fixes exploit where you can be considered to be inside bg
+            // while you are actually outside if you kill wow process on
+            // loading screen during the teleport into bg when joining
+            while (_player->IsBeingTeleportedFar())
+            {
+                HandleMoveWorldportAckOpcode();
+                sMapMgr.ExecuteSingleDelayedTeleport(_player);
+            }
         }
 
         // Refresh apres ca
@@ -877,7 +897,7 @@ void WorldSession::SetAccountData(AccountDataType type, const std::string& data)
 
 void WorldSession::SendAccountDataTimes()
 {
-    WorldPacket data(SMSG_ACCOUNT_DATA_TIMES, NUM_ACCOUNT_DATA_TYPES * MD5_DIGEST_LENGTH);
+    WorldPacket data(SMSG_ACCOUNT_DATA_MD5, NUM_ACCOUNT_DATA_TYPES * MD5_DIGEST_LENGTH);
     for (AccountData const& itr : m_accountData)
     {
         if (itr.data.empty())
@@ -977,11 +997,7 @@ void WorldSession::ExecuteOpcode(OpcodeHandler const& opHandle, WorldPacket* pac
     if (_player)
         _player->SetCanDelayTeleport(true);
 
-
     //sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[%s] Recvd packet : %u/0x%x (%s)", GetUsername().c_str(), packet->GetOpcode(), packet->GetOpcode(), LookupOpcodeName(packet->GetOpcode()));
-    if (Player* player = GetPlayer())
-        DEBUG_UNIT(player, DEBUG_PACKETS_RECV, "[%s] Recvd packet : %u/0x%x (%s)", player->GetName(), packet->GetOpcode(), packet->GetOpcode(), LookupOpcodeName(packet->GetOpcode()));
-
     (this->*opHandle.handler)(*packet);
 
     if (_player)
@@ -1087,7 +1103,7 @@ void WorldSession::ProcessAnticheatAction(char const* detector, char const* reas
         sWorld.SendGMText(LANG_GM_ANNOUNCE_COLOR, detector, oss.str().c_str());
     }
     
-    sLog.Player(this, LOG_ANTICHEAT, LOG_LVL_MINIMAL, "[%s] Player %s, Cheat %s, Penalty: %s",
+    sLog.Player(this, LOG_ANTICHEAT, detector, LOG_LVL_MINIMAL, "[%s] Player %s, Cheat %s, Penalty: %s",
         detector, playerDesc.c_str(), reason, action);
 }
 

@@ -1,0 +1,149 @@
+name: Repack Publisher - dataupdate
+# reoacker-*.yml has to be modified at same time
+on:
+  workflow_run: #this approach needs to be done on the default branch, does not support multiple trigger
+    workflows: ["Client Data Extractor"]
+    types:
+      - completed
+
+# This is what will cancel the previous workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+jobs:
+  on-success:
+    runs-on: windows-2019
+    
+    steps:
+    #git checkout
+    - uses: actions/checkout@v3
+    
+    #download latest bin # folder after extract: Release
+    - uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "vmangos/core"
+        tag: "latest"
+        fileName: "*" 
+        
+    #download latest map, # folder after extract: data
+    - uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "coolzoom/w1x-vmcore"
+        tag: "data-latest"
+        fileName: "*"   
+        
+    #download latest db # folder after extract: db_dump
+    - uses: robinraju/release-downloader@v1.7
+      with:
+        repository: "coolzoom/w1x-vmcore"
+        tag: "db_latest"
+        fileName: "*" 
+        
+    #extract bin(Release) and database(db_dump)
+    - name: extract bin and database 
+      run: |
+          fsutil volume diskfree C:
+          fsutil volume diskfree D:
+          
+          7z x *anticheat.zip
+          7z x data.zip
+          7z x db-*.zip
+          
+          del *.zip
+          dir
+
+    #extract repacker and remove old zip, folder after extract MaNGOS
+    - name: extract repacker     
+      run: |
+          cd ${{github.workspace}}/contrib/repack
+          7z x *.7z
+          del *.7z
+          mkdir junk
+
+    #stop mysql and start portable mysql and import data
+    - name: import database  
+      run: |
+          #net stop mysql
+          #taskkill /f /t /im mysqld.exe
+          cd ${{github.workspace}}/contrib/repack/MaNGOS
+          start mysql5/bin/mysqld.exe --max_allowed_packet=128M
+          
+          
+    - name: Create tables
+      run: |
+        cd ${{github.workspace}}/contrib/repack/MaNGOS/mysql5/bin
+        ./mysql.exe -u root -proot -e "CREATE DATABASE IF NOT EXISTS realmd DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+        ./mysql.exe -u root -proot -e "CREATE DATABASE IF NOT EXISTS characters DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+        ./mysql.exe -u root -proot -e "CREATE DATABASE IF NOT EXISTS mangos DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+        ./mysql.exe -u root -proot -e "CREATE DATABASE IF NOT EXISTS logs DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+    - name: Import data
+      run: |
+        cd ${{github.workspace}}/contrib/repack/MaNGOS/mysql5/bin
+        ./mysql.exe -u root -proot realmd -e "source ${{github.workspace}}/db_dump/logon.sql"
+        ./mysql.exe -u root -proot logs -e "source ${{github.workspace}}/db_dump/logs.sql"
+        ./mysql.exe -u root -proot mangos -e "source ${{github.workspace}}/db_dump/mangos.sql"
+        ./mysql.exe -u root -proot characters -e "source ${{github.workspace}}/db_dump/characters.sql"
+        cd ${{github.workspace}}/contrib/repack/MaNGOS        
+        ./"Stop MySQL.bat"
+    - name: Remove junk dir
+      uses: JesseTG/rm@v1.0.2
+      with:
+        path: ${{github.workspace}}/junk
+
+
+    - name: copy bin files
+      run: |   
+          cd ${{github.workspace}}
+          copy ${{github.workspace}}/Release/realmd.exe ${{github.workspace}}/contrib/repack/MaNGOS/realmd.exe
+          copy ${{github.workspace}}/Release/mangosd.exe ${{github.workspace}}/contrib/repack/MaNGOS/mangosd.exe
+          copy ${{github.workspace}}/Release/tbb.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbb.dll
+          copy ${{github.workspace}}/Release/tbb_debug.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbb_debug.dll
+          copy ${{github.workspace}}/Release/tbb_preview.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbb_preview.dll
+          copy ${{github.workspace}}/Release/tbb_preview_debug.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbb_preview_debug.dll
+          copy ${{github.workspace}}/Release/tbbmalloc.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbbmalloc.dll
+          copy ${{github.workspace}}/Release/tbbmalloc_debug.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbbmalloc_debug.dll
+          copy ${{github.workspace}}/Release/tbbmalloc_proxy.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbbmalloc_proxy.dll
+          copy ${{github.workspace}}/Release/tbbmalloc_proxy_debug.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbbmalloc_proxy_debug.dll
+          copy ${{github.workspace}}/Release/ACE.dll ${{github.workspace}}/contrib/repack/MaNGOS/ACE.dll
+          copy ${{github.workspace}}/Release/libmysql.dll ${{github.workspace}}/contrib/repack/MaNGOS/libmysql.dll
+          copy ${{github.workspace}}/Release/libssl-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libssl-1_1-x64.dll
+          copy ${{github.workspace}}/Release/libcrypto-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libcrypto-1_1-x64.dll
+          
+    - name: copy data files
+      run: |   
+          cd ${{github.workspace}}
+          move ${{github.workspace}}/data/maps ${{github.workspace}}/contrib/repack/MaNGOS/data/maps
+          move ${{github.workspace}}/data/vmaps ${{github.workspace}}/contrib/repack/MaNGOS/data/vmaps
+          move ${{github.workspace}}/data/mmaps ${{github.workspace}}/contrib/repack/MaNGOS/data/mmaps
+
+    - name: make repack zip
+      run: |   
+          fsutil volume diskfree D:      
+          cd ${{github.workspace}}/contrib/repack
+          7z a -tzip repack.zip MaNGOS
+          
+    - name: Archive this artefact
+      uses: actions/upload-artifact@v2
+      with:
+          name: snapshot-repack
+          path: "${{github.workspace}}/contrib/repack/repack.zip"
+
+    - name: Download artifact snapshot-datapackage
+      uses: actions/download-artifact@v1
+      with:
+        name: snapshot-repack
+        path: all_snapshots
+
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+    - name: Upload snapshot
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "repack-latest"
+        prerelease: true
+        title: "Repack (${{ steps.date.outputs.date }})"
+        files: all_snapshots

@@ -1,0 +1,93 @@
+name: Scheduled Merge Remote Action
+
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of the month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+# │ │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+# │ │ │ │ │
+# │ │ │ │ │
+# │ │ │ │ │
+# * * * * *
+# Operator	Description	Example
+# *	Any value	* * * * * runs every minute of every day.
+# ,	Value list separator	2,10 4,5 * * * runs at minute 2 and 10 of the 4th and 5th hour of every day.
+# -	Range of values	0 4-6 * * * runs at minute 0 of the 4th, 5th, and 6th hour.
+# /	Step values	20/15 * * * * runs every 15 minutes starting from minute 20 through 59 (minutes 20, 35, and 50).
+
+on: 
+  push:
+  schedule:
+    - cron: '0 0,12 * * *'
+    # runs at minutes 0 of 0 and 12th hour of everyday
+
+
+# This is what will cancel the previous workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+  
+jobs:
+  merge-upstream:
+    runs-on: ubuntu-latest
+    steps: 
+        - name: Update description
+          uses: ouuan/This-repo-has-x-stars-y-forks-action@v2
+          with:
+            token: ${{ secrets.PAT }}
+            template: 'Progressive Vanilla Core aimed at all versions from 1.2 to 1.12: <auto>.'
+        - name: Checkout
+          uses: actions/checkout@v3
+          with:
+            ref: repacker             # set the branch to merge to
+            fetch-depth: 0 
+        - name: Merge Upstream
+          run: | 
+              git remote add -f upstream "https://github.com/vmangos/core.git"
+              git remote -v
+              git branch --all
+              git config --global user.email "actions@github.com"
+              git config --global user.name "Merge Upstream Action"
+              git checkout repacker
+              git merge upstream/development
+              git push origin repacker
+        # #download Classic Launcher
+        # - uses: robinraju/release-downloader@v1.7
+          # with:
+            # repository: "coolzoom/WoW-Launcher"
+            # tag: "latest"
+            # fileName: "*"   
+            
+        # #download Proxy
+        # - uses: robinraju/release-downloader@v1.7
+          # with:
+            # repository: "coolzoom/HermesProxy"
+            # tag: "latest"
+            # fileName: "*" 
+            
+        # - name: Archive this artefact
+          # uses: actions/upload-artifact@v2
+          # with:
+              # name: snapshot-proxy
+              # path: |
+                  # ${{github.workspace}}/*.zip
+                  
+        # - name: Download artifact snapshot-datapackage
+          # uses: actions/download-artifact@v1
+          # with:
+            # name: snapshot-proxy
+            # path: all_snapshots
+
+        # - name: Get current date
+          # id: date
+          # run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+        # - name: Upload snapshot
+          # uses: "marvinpinto/action-automatic-releases@latest"
+          # with:
+            # repo_token: "${{ secrets.GITHUB_TOKEN }}"
+            # automatic_release_tag: "proxy-latest"
+            # prerelease: true
+            # title: "ClassicProxy and Launcher (${{ steps.date.outputs.date }})"
+            # files: all_snapshots                
+                  

@@ -1,4 +1,4 @@
-[![vmangos CI build](https://github.com/vmangos/core/actions/workflows/vmangos.yml/badge.svg)](https://github.com/vmangos/core/actions/workflows/vmangos.yml)
+[![vmangos CI build](https://github.com/coolzoom/vmangos-pack/actions/workflows/vmangos.yml/badge.svg)](https://github.com/coolzoom/vmangos-pack/actions/workflows/vmangos.yml)
 
 
 # Progressive Vanilla
@@ -24,9 +24,11 @@ This project is an independent continuation of the Elysium / LightsHope codebase
 - Tools are great: Content creation should not require programming knowledge. We hope to eventually provide tools that allow for user-friendly editing of database scripts and content, with all data presented in human-readable form.
 
 ### Downloads
-- [![vmangos CI build](https://github.com/vmangos/core/actions/workflows/dev-release.yml/badge.svg)](https://github.com/vmangos/core/releases/tag/latest)  Latest development binary
-- [![vmangos Development DB Dump](https://github.com/vmangos/core/actions/workflows/db_dump.yml/badge.svg)](https://github.com/vmangos/core/releases/tag/db_latest)  mysql5.6 full dump, no update needed.
 
+- [![bin](https://github.com/coolzoom/vmangos-pack/actions/workflows/dev-release.yml/badge.svg)](https://github.com/coolzoom/vmangos-pack/releases/tag/latest)  Latest development binary
+- [![db](https://github.com/coolzoom/vmangos-pack/actions/workflows/db_dump.yml/badge.svg)](https://github.com/coolzoom/vmangos-pack/releases/tag/db_latest)  mysql5.6 full dump, no update needed.
+- [![data](https://github.com/coolzoom/vmangos-pack/actions/workflows/datagen.yml/badge.svg)](https://github.com/coolzoom/vmangos-pack/releases/tag/data-latest) Latest dbc/maps/vmaps/mmaps from enGB client
+- [![repack](https://github.com/coolzoom/vmangos-pack/actions/workflows/repacker-afterbinrelease.yml/badge.svg)](https://github.com/coolzoom/vmangos-pack/releases/tag/repack-latest)  Latest development repack
 ### Useful Links
 - [Wiki](https://github.com/vmangos/wiki)
 - [Discord](https://discord.gg/x9a2jt7)

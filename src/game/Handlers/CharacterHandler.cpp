@@ -44,6 +44,7 @@
 #include "MasterPlayer.h"
 #include "PlayerBroadcaster.h"
 #include "PlayerBotMgr.h"
+#include "AccountMgr.h"
 
 class LoginQueryHolder : public SqlQueryHolder
 {
@@ -546,6 +547,9 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     LoadAccountData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADACCOUNTDATA), PER_CHARACTER_CACHE_MASK);
     SendAccountDataTimes();
 
+    pCurrChar->GetSocial()->SendFriendList();
+    pCurrChar->GetSocial()->SendIgnoreList();
+
     // Send MOTD (1.12.1 not have SMSG_MOTD, so do it in another way)
     {
         uint32 linecount = 0;
@@ -582,6 +586,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         guild->BroadcastEvent(GE_SIGNED_ON, pCurrChar->GetObjectGuid(), pCurrChar->GetName());
     }
 
+    if (char const* warning = sAccountMgr.GetWarningText(GetAccountId()))
+    {
+        ChatHandler(pCurrChar).PSendSysMessage(LANG_ACCOUNT_WARNED, warning);
+        SendNotification("WARNING: %s", warning);
+    }
+
     if (!pCurrChar->IsAlive())
         pCurrChar->SendCorpseReclaimDelay(true);
 
@@ -615,8 +625,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         sObjectAccessor.AddObject(pCurrChar);
 
     //sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Player %s added to Map.",pCurrChar->GetName());
-    pCurrChar->GetSocial()->SendFriendList();
-    pCurrChar->GetSocial()->SendIgnoreList();
 
     pCurrChar->SendInitialPacketsAfterAddToMap();
     if (alreadyOnline)

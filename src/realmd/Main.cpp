@@ -92,6 +92,8 @@ void usage(const char *prog)
         ,prog);
 }
 
+char const* g_mainLogFileName = "Realmd.log";
+
 /// Launch the realm server
 extern int main(int argc, char **argv)
 {
@@ -270,6 +272,12 @@ extern int main(int argc, char **argv)
     if (sRealmList.size() == 0)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "No valid realms specified.");
+        Log::WaitBeforeContinueIfNeed();
+        return 1;
+    }
+    if (ExpectedRealmdClientBuilds.size() == 0)
+    {
+        sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "No valid client builds specified.");
         Log::WaitBeforeContinueIfNeed();
         return 1;
     }

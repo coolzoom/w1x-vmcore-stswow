@@ -723,15 +723,17 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer* data, UpdateMask* u
                 // RAID ally-horde - Faction
                 else if (index == UNIT_FIELD_FACTIONTEMPLATE)
                 {
-                    Player* owner = ((Unit*)this)->GetCharmerOrOwnerPlayerOrPlayerItself();
+                    Unit const* owner = ((Unit*)this)->GetCharmerOrOwner();
+                    if (!owner)
+                        owner = ToPlayer();
                     bool forceFriendly = false;
-                    if (owner)
+                    if (owner && owner->IsPlayer())
                     {
                         FactionTemplateEntry const* ft1,* ft2;
                         ft1 = owner->GetFactionTemplateEntry();
                         ft2 = target->GetFactionTemplateEntry();
-                        if (ft1 && ft2 && !ft1->IsFriendlyTo(*ft2) && owner->IsInSameRaidWith(target))
-                            if (owner->IsInInterFactionMode() && target->IsInInterFactionMode())
+                        if (ft1 && ft2 && !ft1->IsFriendlyTo(*ft2) && static_cast<Player const*>(owner)->IsInSameRaidWith(target))
+                            if (static_cast<Player const*>(owner)->IsInInterFactionMode() && target->IsInInterFactionMode())
                                 forceFriendly = true;
                     }
                     uint32 faction = m_uint32Values[index];
@@ -1362,7 +1364,10 @@ void Object::ExecuteDelayedActions()
 
 bool WorldObject::IsWithinLootXPDist(WorldObject const* objToLoot) const
 {
-    if (objToLoot && IsInMap(objToLoot) && objToLoot->GetMap()->IsRaid())
+    if (!IsInMap(objToLoot))
+        return false;
+
+    if (objToLoot->GetMap()->IsRaid())
         return true;
 
     // Bosses have increased loot distance.
@@ -1370,7 +1375,7 @@ bool WorldObject::IsWithinLootXPDist(WorldObject const* objToLoot) const
     if (objToLoot->IsCreature() && (static_cast<Creature const*>(objToLoot)->GetCreatureInfo()->rank == CREATURE_ELITE_WORLDBOSS))
         lootDistance += 150.0f;
 
-    return objToLoot && IsInMap(objToLoot) && _IsWithinDist(objToLoot, lootDistance, false);
+    return _IsWithinDist(objToLoot, lootDistance, false);
 }
 
 float WorldObject::GetVisibilityModifier() const
@@ -1577,7 +1582,7 @@ bool WorldObject::IsWithinDist2d(float x, float y, float dist2compare, SizeFacto
 
 bool WorldObject::IsInMap(WorldObject const* obj) const
 {
-    return IsInWorld() && obj->IsInWorld() && (GetMap() == obj->GetMap());
+    return IsInWorld() && obj->IsInWorld() && (FindMap() == obj->FindMap());
 }
 
 bool WorldObject::_IsWithinDist(WorldObject const* obj, float const dist2compare, const bool is3D, SizeFactor distcalc) const

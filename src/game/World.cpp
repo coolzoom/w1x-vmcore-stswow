@@ -266,20 +266,20 @@ void World::AddSession_(WorldSession* s)
 
     m_sessions[s->GetAccountId()] = s;
 
-    uint32 Sessions = GetActiveAndQueuedSessionCount();
-    uint32 pLimit = GetPlayerAmountLimit();
-    uint32 QueueSize = GetQueuedSessionCount();             //number of players in the queue
+    uint32 activeSessions = GetActiveSessionCount();
+    uint32 playerLimit = GetPlayerAmountLimit();
+    uint32 queuedSessions = GetQueuedSessionCount();             //number of players in the queue
 
     //so we don't count the user trying to
     //login as a session and queue the socket that we are using
-    if (decrease_session)
-        --Sessions;
+    if (decrease_session && activeSessions)
+        --activeSessions;
 
-    if (pLimit > 0 && Sessions >= pLimit && !CanSkipQueue(s))
+    if (playerLimit > 0 && activeSessions >= playerLimit && !CanSkipQueue(s))
     {
         AddQueuedSession(s);
         UpdateMaxSessionCounters();
-        sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++QueueSize);
+        sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "PlayerQueue: Account id %u is in Queue Position (%u).", s->GetAccountId(), ++queuedSessions);
         return;
     }
 
@@ -294,10 +294,10 @@ void World::AddSession_(WorldSession* s)
     UpdateMaxSessionCounters();
 
     // Updates the population
-    if (pLimit > 0)
+    if (playerLimit > 0)
     {
         float popu = float(GetActiveSessionCount());        // updated number of users on the server
-        popu /= pLimit;
+        popu /= playerLimit;
         popu *= 2;
 
         static SqlStatementID id;
@@ -368,11 +368,11 @@ bool World::RemoveQueuedSession(WorldSession* sess)
         --sessions;
 
     uint32 loggedInSessions = uint32(m_sessions.size() - m_QueuedSessions.size());
-    if (loggedInSessions >= getConfig(CONFIG_UINT32_PLAYER_HARD_LIMIT))
+    if (loggedInSessions > getConfig(CONFIG_UINT32_PLAYER_HARD_LIMIT))
         return found;
-
+    
     // accept first in queue
-    if ((!m_playerLimit || (int32)sessions < m_playerLimit) && !m_QueuedSessions.empty())
+    if ((!m_playerLimit || (int32)sessions <= m_playerLimit) && !m_QueuedSessions.empty())
     {
         WorldSession* pop_sess = m_QueuedSessions.front();
         pop_sess->SetInQueue(false);
@@ -584,7 +584,17 @@ void World::LoadConfigSettings(bool reload)
         setConfigMinMax(CONFIG_UINT32_MAX_PLAYER_LEVEL, "MaxPlayerLevel", PLAYER_MAX_LEVEL, 1, PLAYER_STRONG_MAX_LEVEL);
     setConfigMinMax(CONFIG_UINT32_START_PLAYER_LEVEL, "StartPlayerLevel", 1, 1, getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL));
     setConfigMinMax(CONFIG_UINT32_START_PLAYER_MONEY, "StartPlayerMoney", 0, 0, MAX_MONEY_AMOUNT);
-    setConfigMin(CONFIG_UINT32_MIN_HONOR_KILLS, "MinHonorKills", MIN_HONOR_KILLS, 1);
+    setConfig(CONFIG_UINT32_MIN_HONOR_KILLS, "MinHonorKills", 0);
+
+    // If min honor kills is at 0, decide based on patch.
+    if (getConfig(CONFIG_UINT32_MIN_HONOR_KILLS) == 0)
+    {
+        if (GetWowPatch() >= WOW_PATCH_110)
+            setConfig(CONFIG_UINT32_MIN_HONOR_KILLS, MIN_HONOR_KILLS_POST_1_10);
+        else
+            setConfig(CONFIG_UINT32_MIN_HONOR_KILLS, MIN_HONOR_KILLS_PRE_1_10);
+    }
+
     setConfigMinMax(CONFIG_UINT32_MAINTENANCE_DAY, "MaintenanceDay", 4, 0, 6);
     setConfig(CONFIG_BOOL_AUTO_HONOR_RESTART, "AutoHonorRestart", true);
     setConfig(CONFIG_BOOL_ALL_TAXI_PATHS, "AllFlightPaths", false);
@@ -625,6 +635,8 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_MAIL_DELIVERY_DELAY, "MailDeliveryDelay", HOUR);
 
     setConfigMin(CONFIG_UINT32_MASS_MAILER_SEND_PER_TICK, "MassMailer.SendPerTick", 10, 1);
+
+    setConfigMin(CONFIG_UINT32_RETURNED_MAIL_PR_TICK, "Mail.ReturnedMail.PerTick", 5, 1);
 
     setConfig(CONFIG_UINT32_BANLIST_RELOAD_TIMER, "BanListReloadTimer", 60);
     setConfigPos(CONFIG_UINT32_UPTIME_UPDATE, "UpdateUptimeInterval", 10);
@@ -685,9 +697,9 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_SILENTLY_GM_JOIN_TO_CHANNEL, "Channel.SilentlyGMJoin", false);
     setConfig(CONFIG_BOOL_STRICT_LATIN_IN_GENERAL_CHANNELS, "Channel.StrictLatinInGeneral", false);
 
-    setConfig(CONFIG_BOOL_CHAT_FAKE_MESSAGE_PREVENTING, "ChatFakeMessagePreventing", false);
+    setConfig(CONFIG_BOOL_CHAT_FAKE_MESSAGE_PREVENTING, "ChatFakeMessagePreventing", true);
 
-    setConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_SEVERITY, "ChatStrictLinkChecking.Severity", 0);
+    setConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_SEVERITY, "ChatStrictLinkChecking.Severity", 2);
     setConfig(CONFIG_UINT32_CHAT_STRICT_LINK_CHECKING_KICK,     "ChatStrictLinkChecking.Kick", 0);
 
     setConfig(CONFIG_BOOL_SEND_LOOT_ROLL_UPON_RECONNECT, "SendLootRollUponReconnect", false);
@@ -929,6 +941,7 @@ void World::LoadConfigSettings(bool reload)
     setConfigMinMax(CONFIG_UINT32_SPELL_EFFECT_DELAY, "Spell.EffectDelay", 400, 0, 1000);
     setConfigMinMax(CONFIG_UINT32_SPELL_PROC_DELAY, "Spell.ProcDelay", 400, 0, 1000);
     setConfigMinMax(CONFIG_UINT32_DEBUFF_LIMIT, "DebuffLimit", 0, 0, 40);
+
     // If max debuff slots is at 0, decide based on patch.
     if (getConfig(CONFIG_UINT32_DEBUFF_LIMIT) == 0)
     {
@@ -979,14 +992,16 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_YELLRANGE_QUADRATICSCALE_MAXLEVEL, "YellRange.QuadraticScale.MaxLevel", 0);
     setConfig(CONFIG_UINT32_YELLRANGE_MIN, "YellRange.Min", 0);
 
-    setConfig(CONFIG_BOOL_LOGSDB_BATTLEGROUNDS, "LogsDB.Battlegrounds", 0);
-    setConfig(CONFIG_BOOL_LOGSDB_CHARACTERS, "LogsDB.Characters", 1);
-    setConfig(CONFIG_BOOL_LOGSDB_CHAT, "LogsDB.Chat", 1);
-    setConfig(CONFIG_BOOL_LOGSDB_TRADES, "LogsDB.Trades", 1);
-    setConfig(CONFIG_BOOL_LOGSDB_TRANSACTIONS, "LogsDB.Transactions", 0);
-    setConfig(CONFIG_BOOL_SMARTLOG_DEATH, "Smartlog.Death", 1);
-    setConfig(CONFIG_BOOL_SMARTLOG_LONGCOMBAT, "Smartlog.LongCombat", 1);
-    setConfig(CONFIG_BOOL_SMARTLOG_SCRIPTINFO, "Smartlog.ScriptInfo", 1);
+    setConfig(CONFIG_BOOL_LOGSDB_BATTLEGROUNDS, "LogsDB.Battlegrounds", false);
+    setConfig(CONFIG_BOOL_LOGSDB_CHARACTERS, "LogsDB.Characters", false);
+    setConfig(CONFIG_BOOL_LOGSDB_LEVELUP, "LogsDB.LevelUp", false);
+    setConfig(CONFIG_BOOL_LOGSDB_GM, "LogsDB.GM", false);
+    setConfig(CONFIG_BOOL_LOGSDB_CHAT, "LogsDB.Chat", false);
+    setConfig(CONFIG_BOOL_LOGSDB_LOOT, "LogsDB.Loot", false);
+    setConfig(CONFIG_BOOL_LOGSDB_TRADES, "LogsDB.Trades", false);
+    setConfig(CONFIG_BOOL_LOGSDB_TRANSACTIONS, "LogsDB.Transactions", false);
+    setConfig(CONFIG_BOOL_SMARTLOG_DEATH, "Smartlog.Death", false);
+    setConfig(CONFIG_BOOL_SMARTLOG_LONGCOMBAT, "Smartlog.LongCombat", false);
     setConfig(CONFIG_UINT32_LONGCOMBAT, "Smartlog.LongCombatDuration", 30 * MINUTE);
 
     setConfig(CONFIG_UINT32_ITEM_INSTANTSAVE_QUALITY, "Item.InstantSaveQuality", ITEM_QUALITY_ARTIFACT);
@@ -1091,6 +1106,9 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_AC_MOVEMENT_CHEAT_NO_FALL_TIME_REJECT, "Anticheat.NoFallTime.Reject", true);
     setConfig(CONFIG_UINT32_AC_MOVEMENT_CHEAT_NO_FALL_TIME_THRESHOLD, "Anticheat.NoFallTime.Threshold", 5);
     setConfig(CONFIG_UINT32_AC_MOVEMENT_CHEAT_NO_FALL_TIME_PENALTY, "Anticheat.NoFallTime.Penalty", CHEAT_ACTION_LOG | CHEAT_ACTION_REPORT_GMS | CHEAT_ACTION_KICK);
+    setConfig(CONFIG_BOOL_AC_MOVEMENT_CHEAT_BAD_FALL_RESET_ENABLED, "Anticheat.BadFallReset.Enable", true);
+    setConfig(CONFIG_UINT32_AC_MOVEMENT_CHEAT_BAD_FALL_RESET_THRESHOLD, "Anticheat.BadFallReset.Threshold", 1);
+    setConfig(CONFIG_UINT32_AC_MOVEMENT_CHEAT_BAD_FALL_RESET_PENALTY, "Anticheat.BadFallReset.Penalty", CHEAT_ACTION_LOG | CHEAT_ACTION_REPORT_GMS | CHEAT_ACTION_KICK);
     setConfig(CONFIG_BOOL_AC_MOVEMENT_CHEAT_TELEPORT_ENABLED, "Anticheat.Teleport.Enable", true);
     setConfig(CONFIG_BOOL_AC_MOVEMENT_CHEAT_TELEPORT_REJECT, "Anticheat.Teleport.Reject", true);
     setConfig(CONFIG_FLOAT_AC_MOVEMENT_CHEAT_TELEPORT_DISTANCE, "Anticheat.Teleport.Distance", 40.0f);
@@ -2074,6 +2092,41 @@ private:
     int32 i_textId;
     va_list* i_args;
 };
+class WorldBroadcastTextBuilder
+{
+public:
+    typedef std::vector<WorldPacket*> WorldPacketList;
+    explicit WorldBroadcastTextBuilder(uint32 textId) : i_textId(textId) {}
+    void operator()(WorldPacketList& data_list, uint32 loc_idx)
+    {
+        char const* text = sObjectMgr.GetBroadcastText(i_textId, loc_idx);
+        do_helper(data_list, (char*)text);
+    }
+private:
+    char* lineFromMessage(char*& pos)
+    {
+        char* start = strtok(pos, "\n");
+        pos = nullptr;
+        return start;
+    }
+    void do_helper(WorldPacketList& data_list, char* text)
+    {
+        char* pos = text;
+
+        while (char* line = lineFromMessage(pos))
+        {
+            WorldPacket* data = new WorldPacket();
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
+            ChatHandler::BuildChatPacket(*data, CHAT_MSG_BG_SYSTEM_NEUTRAL, line);
+#else
+            ChatHandler::BuildChatPacket(*data, CHAT_MSG_SYSTEM, line);
+#endif
+            data_list.push_back(data);
+        }
+    }
+
+    uint32 i_textId;
+};
 }                                                           // namespace MaNGOS
 
 /// Send a System Message to all players (except self if mentioned)
@@ -2095,6 +2148,21 @@ void World::SendWorldText(int32 string_id, ...)
     }
 
     va_end(ap);
+}
+
+void World::SendBroadcastTextToWorld(uint32 textId)
+{
+    MaNGOS::WorldBroadcastTextBuilder wt_builder(textId);
+    MaNGOS::LocalizedPacketListDo<MaNGOS::WorldBroadcastTextBuilder> wt_do(wt_builder);
+    for (const auto& itr : m_sessions)
+    {
+        if (WorldSession* session = itr.second)
+        {
+            Player* player = session->GetPlayer();
+            if (player && player->IsInWorld())
+                wt_do(player);
+        }
+    }
 }
 
 void World::SendGMTicketText(char const* text)
@@ -2906,20 +2974,20 @@ void World::LogMoneyTrade(ObjectGuid sender, ObjectGuid receiver, uint32 amount,
     logStmt.Execute();
 }
 
-void World::LogChat(WorldSession* sess, char const* type, std::string const& msg, PlayerPointer target, uint32 chanId, char const* chanStr)
+void World::LogChat(WorldSession* sess, char const* type, char const* msg, PlayerPointer target, uint32 chanId, char const* chanStr)
 {
     ASSERT(sess);
     PlayerPointer plr = sess->GetPlayerPointer();
     ASSERT(plr);
 
     if (target)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u -> %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), target->GetName(), target->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u -> %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), target->GetName(), target->GetObjectGuid().GetCounter(), msg);
     else if (chanId)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%u] %s:%u : %s", type, chanId, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%u] %s:%u : %s", type, chanId, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
     else if (chanStr)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%s] %s:%u : %s", type, chanStr, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%s] %s:%u : %s", type, chanStr, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
     else
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
 }
 
 void World::LogTransaction(PlayerTransactionData const& data)

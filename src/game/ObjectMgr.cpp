@@ -969,7 +969,8 @@ void ObjectMgr::LoadCreatureLocales()
 
         if (!GetCreatureTemplate(entry))
         {
-            sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `locales_creature` has data for not existed creature entry %u, skipped.", entry);
+            if (!IsExistingCreatureId(entry))
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `locales_creature` has data for not existed creature entry %u, skipped.", entry);
             continue;
         }
 
@@ -1472,6 +1473,18 @@ void ObjectMgr::CheckCreatureTemplates()
                 sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Creature (Entry: %u) has leash distance below detection distance (%f)", cInfo->entry, cInfo->leash_range);
                 const_cast<CreatureInfo*>(cInfo)->leash_range = 0.0f;
             }
+        }
+
+        if (cInfo->flags_extra & CREATURE_FLAG_EXTRA_DESPAWN_INSTANTLY)
+        {
+            if (cInfo->gold_min || cInfo->gold_max)
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Creature (Entry: %u) with despawn instantly flag has gold loot assigned. It will never be lootable.", cInfo->entry);
+
+            if (cInfo->loot_id)
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Creature (Entry: %u) with despawn instantly flag has corpse loot assigned. It will never be lootable.", cInfo->entry);
+
+            if (cInfo->skinning_loot_id)
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Creature (Entry: %u) with despawn instantly flag has skinning loot assigned. It will never be lootable.", cInfo->entry);
         }
 
         ConvertCreatureAurasField<CreatureInfo>(const_cast<CreatureInfo*>(cInfo), "creature_template", "Entry", cInfo->entry);
@@ -2145,13 +2158,13 @@ CreatureClassLevelStats const* ObjectMgr::GetCreatureClassLevelStats(uint32 unit
 void ObjectMgr::LoadCreatures(bool reload)
 {
     uint32 count = 0;
-    //                                                                          0                  1                2                 3                 4      5
-    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `creature`.`guid`, `creature`.`id`, `creature`.`id2`, `creature`.`id3`, `creature`.`id4`, `map`,"
-    //                      6             7             8             9              10                  11                  12
+    //                                                                          0                  1                2                 3                 4                 5      6
+    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT `creature`.`guid`, `creature`.`id`, `creature`.`id2`, `creature`.`id3`, `creature`.`id4`, `creature`.`id5`, `map`,"
+    //                      7             8             9             10             11                  12                  13
                           "`position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecsmin`, `spawntimesecsmax`, `wander_distance`, "
-    //                      13                14              15               16
+    //                      14                15              16               17
                           "`health_percent`, `mana_percent`, `movement_type`, `event`,"
-    //                                      17                                     18            19             20                           21                      22
+    //                                      18                                     19            20             21                           22                      23
                           "`pool_creature`.`pool_entry`, `pool_creature_template`.`pool_entry`, `spawn_flags`, `visibility_mod`, `creature`.`patch_min`, `creature`.`patch_max`  "
                           "FROM `creature` "
                           "LEFT OUTER JOIN `game_event_creature` ON `creature`.`guid` = `game_event_creature`.`guid` "
@@ -2177,12 +2190,12 @@ void ObjectMgr::LoadCreatures(bool reload)
 
         uint32 guid         = fields[ 0].GetUInt32();
         uint32 first_entry  = fields[ 1].GetUInt32();
-        float curhealth     = fields[13].GetFloat();
-        float curmana       = fields[14].GetFloat();
-        uint32 spawnFlags   = fields[19].GetUInt32();
+        float curhealth     = fields[14].GetFloat();
+        float curmana       = fields[15].GetFloat();
+        uint32 spawnFlags   = fields[20].GetUInt32();
         bool is_dead        = spawnFlags & SPAWN_FLAG_DEAD;
-        uint8 patch_min     = fields[21].GetUInt8();
-        uint8 patch_max     = fields[22].GetUInt8();
+        uint8 patch_min     = fields[22].GetUInt8();
+        uint8 patch_max     = fields[23].GetUInt8();
         bool existsInPatch  = true;
 
         if (!first_entry)
@@ -2229,7 +2242,7 @@ void ObjectMgr::LoadCreatures(bool reload)
                 if ((cInfo->regeneration & REGEN_FLAG_POWER) && (cInfo->unit_class != CLASS_WARRIOR) && (curmana < 100.0f))
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Table `creature` have creature (GUID: %u Entry: %u) with REGEN_FLAG_POWER and low current mana percent (%g%%).", guid, first_entry, curmana);
-                    sLog.Out(LOG_DBERRFIX, LOG_LVL_MINIMAL, "UPDATE `creature` SET `mana_percent=100 WHERE `guid`=%u AND `id`=%u;", guid, first_entry);
+                    sLog.Out(LOG_DBERRFIX, LOG_LVL_MINIMAL, "UPDATE `creature` SET `mana_percent`=100 WHERE `guid`=%u AND `id`=%u;", guid, first_entry);
                     curmana = 100.0f;
                 }
 
@@ -2259,23 +2272,24 @@ void ObjectMgr::LoadCreatures(bool reload)
         data.creature_id[1]     = fields[ 2].GetUInt32();
         data.creature_id[2]     = fields[ 3].GetUInt32();
         data.creature_id[3]     = fields[ 4].GetUInt32();
-        data.position.mapId     = fields[ 5].GetUInt16();
-        data.position.x         = fields[ 6].GetFloat();
-        data.position.y         = fields[ 7].GetFloat();
-        data.position.z         = fields[8].GetFloat();
-        data.position.o         = fields[9].GetFloat();
-        data.spawntimesecsmin   = fields[10].GetUInt32();
-        data.spawntimesecsmax   = fields[11].GetUInt32();
-        data.wander_distance    = fields[12].GetFloat();
+        data.creature_id[4]     = fields[ 5].GetUInt32();
+        data.position.mapId     = fields[ 6].GetUInt16();
+        data.position.x         = fields[ 7].GetFloat();
+        data.position.y         = fields[ 8].GetFloat();
+        data.position.z         = fields[ 9].GetFloat();
+        data.position.o         = fields[10].GetFloat();
+        data.spawntimesecsmin   = fields[11].GetUInt32();
+        data.spawntimesecsmax   = fields[12].GetUInt32();
+        data.wander_distance    = fields[13].GetFloat();
         data.health_percent     = curhealth;
         data.mana_percent       = curmana;
-        data.movement_type      = fields[15].GetUInt8();
+        data.movement_type      = fields[16].GetUInt8();
         data.spawn_flags        = spawnFlags;
-        data.visibility_mod     = fields[20].GetFloat();
+        data.visibility_mod     = fields[21].GetFloat();
         data.instanciatedContinentInstanceId = sMapMgr.GetContinentInstanceId(data.position.mapId, data.position.x, data.position.y);
-        int16 gameEvent         = fields[16].GetInt16();
-        int16 GuidPoolId        = fields[17].GetInt16();
-        int16 EntryPoolId       = fields[18].GetInt16();
+        int16 gameEvent         = fields[17].GetInt16();
+        int16 GuidPoolId        = fields[18].GetInt16();
+        int16 EntryPoolId       = fields[19].GetInt16();
 
         MapEntry const* mapEntry = sMapStorage.LookupEntry<MapEntry>(data.position.mapId);
         if (!mapEntry)
@@ -6595,8 +6609,11 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
     OldMailsReturner* cb = new OldMailsReturner();
     cb->serverUp = serverUp;
     cb->basetime = basetime;
-    uint32 limit = serverUp ? 5 : 1000;
-    CharacterDatabase.AsyncPQueryUnsafe(cb, &OldMailsReturner::Callback, "SELECT `id`, `message_type`, `sender_guid`, `receiver_guid`, `item_text_id`, `has_items`, `expire_time`, `cod`, `checked`, `mail_template_id` FROM `mail` WHERE `expire_time` < '" UI64FMTD "' ORDER BY `expire_time` LIMIT %u,%u", (uint64)basetime, m_OldMailCounter, limit);
+
+    if (serverUp)
+        CharacterDatabase.AsyncPQueryUnsafe(cb, &OldMailsReturner::Callback, "SELECT `id`, `message_type`, `sender_guid`, `receiver_guid`, `item_text_id`, `has_items`, `expire_time`, `cod`, `checked`, `mail_template_id` FROM `mail` WHERE `expire_time` < '" UI64FMTD "' ORDER BY `expire_time` LIMIT %u,%u", (uint64)basetime, m_OldMailCounter, sWorld.getConfig(CONFIG_UINT32_RETURNED_MAIL_PR_TICK));
+    else
+        CharacterDatabase.AsyncPQueryUnsafe(cb, &OldMailsReturner::Callback, "SELECT `id`, `message_type`, `sender_guid`, `receiver_guid`, `item_text_id`, `has_items`, `expire_time`, `cod`, `checked`, `mail_template_id` FROM `mail` WHERE `expire_time` < '" UI64FMTD "' ORDER BY `expire_time`", (uint64)basetime);
 }
 
 void ObjectMgr::LoadAreaTriggers()
@@ -6939,7 +6956,7 @@ void ObjectMgr::LoadGraveyardZones()
 {
     m_GraveYardMap.clear();                                  // need for reload case
 
-    std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT `id`, `ghost_zone`, `faction` FROM `game_graveyard_zone` WHERE `build_min` <= %u", SUPPORTED_CLIENT_BUILD));
+    std::unique_ptr<QueryResult> result(WorldDatabase.PQuery("SELECT `id`, `ghost_zone`, `faction` FROM `game_graveyard_zone` WHERE %u BETWEEN `patch_min` AND `patch_max`", sWorld.GetWowPatch()));
 
     uint32 count = 0;
 
@@ -8464,9 +8481,12 @@ void ObjectMgr::DeleteCreatureData(uint32 guid)
     // remove mapid*cellid -> guid_set map
     CreatureData const* data = GetCreatureData(guid);
     if (data)
+    {
         RemoveCreatureFromGrid(guid, data);
+        const_cast<CreatureData*>(data)->spawn_flags |= SPAWN_FLAG_DISABLED;
+    }
 
-    m_CreatureDataMap.erase(guid);
+    //m_CreatureDataMap.erase(guid);
 }
 
 void ObjectMgr::DeleteGOData(uint32 guid)
@@ -10546,22 +10566,6 @@ bool ObjectMgr::IsVendorItemValid(bool isTemplate, char const* tableName, uint32
                 ChatHandler(pl).SendSysMessage(LANG_COMMAND_VENDORSELECTION);
             else if (!IsExistingCreatureId(vendor_entry))
                 sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Table `%s` has data for nonexistent creature (Entry: %u), ignoring", tableName, vendor_entry);
-            return false;
-        }
-
-        // innkeepers become vendors during love is in the air even if they are not normally
-        if (!(cInfo->npc_flags & (UNIT_NPC_FLAG_VENDOR | UNIT_NPC_FLAG_INNKEEPER)))
-        {
-            if (!skip_vendors || skip_vendors->count(vendor_entry) == 0)
-            {
-                if (pl)
-                    ChatHandler(pl).SendSysMessage(LANG_COMMAND_VENDORSELECTION);
-                else
-                    sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Table `%s` has data for creature (Entry: %u) without vendor flag, ignoring", tableName, vendor_entry);
-
-                if (skip_vendors)
-                    skip_vendors->insert(vendor_entry);
-            }
             return false;
         }
     }

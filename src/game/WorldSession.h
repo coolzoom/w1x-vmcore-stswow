@@ -29,6 +29,7 @@
 #include "Item.h"
 #include "GossipDef.h"
 #include "Chat/AbstractPlayer.h"
+#include "SniffFile.h"
 
 struct ItemPrototype;
 struct AuctionEntry;
@@ -84,6 +85,13 @@ enum ClientOSType
     CLIENT_OS_UNKNOWN,
     CLIENT_OS_WIN,
     CLIENT_OS_MAC
+};
+
+enum ClientPlatformType
+{
+    CLIENT_PLATFORM_UNKNOWN,
+    CLIENT_PLATFORM_X86,
+    CLIENT_PLATFORM_PPC
 };
 
 enum PartyOperation
@@ -281,6 +289,8 @@ class WorldSession
         void SetGameBuild(uint32 v) { m_gameBuild = v; }
         ClientOSType GetOS() const { return m_clientOS; }
         void SetOS(ClientOSType os) { m_clientOS = os; }
+        ClientPlatformType GetPlatform() const { return m_clientPlatform; }
+        void SetPlatform(ClientPlatformType platform) { m_clientPlatform = platform; }
         uint32 GetDialogStatus(Player* pPlayer, Object* questgiver, uint32 defstatus);
         uint32 GetAccountMaxLevel() const { return m_characterMaxLevel; }
         void SetAccountFlags(uint32 f) { m_accountFlags = f; }
@@ -377,6 +387,21 @@ class WorldSession
         bool AllowPacket(uint16 opcode);
         void ClearIncomingPacketsByType(PacketProcessing type);
         inline bool HasRecentPacket(PacketProcessing type) const { return m_receivedPacketType[type]; }
+
+        void StartSniffing()
+        {
+            if (!m_sniffFile)
+            {
+                std::string fileName = "packet_log_" + GetUsername() + "_" + std::to_string(time(nullptr)) + ".pkt";
+                m_sniffFile = std::make_unique<SniffFile>(fileName.c_str());
+                m_sniffFile->WriteHeader();
+            }
+        }
+        void StopSniffing()
+        {
+            if (m_sniffFile)
+                m_sniffFile.reset();
+        }
 
         void SendPacket(WorldPacket const* packet);
         void SendNotification(char const* format, ...) ATTR_PRINTF(2, 3);
@@ -738,7 +763,8 @@ class WorldSession
         void HandlePushQuestToParty(WorldPacket& recvPacket);
         void HandleQuestPushResult(WorldPacket& recvPacket);
 
-        bool ProcessChatMessageAfterSecurityCheck(std::string&, uint32, uint32);
+        bool CheckChatMessageValidity(char*, uint32, uint32);
+        bool ProcessChatMessageAfterSecurityCheck(char*, uint32, uint32);
         static bool IsLanguageAllowedForChatType(uint32 lang, uint32 msgType);
         void SendPlayerNotFoundNotice(std::string const& name);
         void SendWrongFactionNotice();
@@ -847,8 +873,10 @@ class WorldSession
         LocaleConstant m_sessionDbcLocale;
         int m_sessionDbLocaleIndex;
         ClientOSType    m_clientOS;
+        ClientPlatformType m_clientPlatform;
         uint32          m_gameBuild;
         std::shared_ptr<PlayerBotEntry> m_bot;
+        std::unique_ptr<SniffFile> m_sniffFile;
 
         Warden* m_warden;
         MovementAnticheat* m_cheatData;

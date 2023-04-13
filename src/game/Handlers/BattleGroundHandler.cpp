@@ -319,7 +319,7 @@ void WorldSession::HandleBattleGroundPlayerPositionsOpcode(WorldPacket& /*recv_d
             if (_player->GetTeam() == ALLIANCE)
                 pFlagCarrier = sObjectMgr.GetPlayer(((BattleGroundWS*)bg)->GetHordeFlagPickerGuid());
             else
-                pFlagCarrier = sObjectMgr.GetPlayer(((BattleGroundWS*)bg)->GetAllianceFlagPickerGuid());;
+                pFlagCarrier = sObjectMgr.GetPlayer(((BattleGroundWS*)bg)->GetAllianceFlagPickerGuid());
 
             data << uint8(pFlagCarrier ? 1 : 0);
 
@@ -663,6 +663,10 @@ void WorldSession::SendBattleGroundJoinError(uint8 err)
             return;
             break;
     }
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
     ChatHandler::BuildChatPacket(data, CHAT_MSG_BG_SYSTEM_NEUTRAL, GetMangosString(msg), LANG_UNIVERSAL);
+#else
+    ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, GetMangosString(msg), LANG_UNIVERSAL);
+#endif
     SendPacket(&data);
 }

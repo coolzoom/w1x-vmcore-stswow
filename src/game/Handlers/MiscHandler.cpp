@@ -380,7 +380,8 @@ void WorldSession::HandleLogoutCancelOpcode(WorldPacket& /*recv_data*/)
         GetPlayer()->SetRooted(false);
 
         //! Stand Up
-        GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
+        if (GetPlayer()->GetStandState() == UNIT_STAND_STATE_SIT)
+            GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
 
         //! DISABLE_ROTATE
         GetPlayer()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
@@ -878,18 +879,16 @@ void WorldSession::HandleUpdateAccountData(WorldPacket& recv_data)
         return;
     }
 
-    ByteBuffer dest;
+    std::vector<uint8> dest;
     dest.resize(decompressedSize);
 
     uint32 currentPosition = recv_data.rpos();
     uLongf realSize = decompressedSize;
-    uncompress(const_cast<uint8*>(dest.contents()), &realSize, const_cast<uint8*>(recv_data.contents() + currentPosition), recv_data.size() - currentPosition);
+    uncompress(const_cast<uint8*>(dest.data()), &realSize, const_cast<uint8*>(recv_data.contents() + currentPosition), recv_data.size() - currentPosition);
 
     recv_data.rpos(recv_data.wpos());                       // uncompress read (recv_data.size() - recv_data.rpos())
 
-    std::string adata;
-    dest >> adata;
-
+    std::string adata((char*)dest.data(), dest.size());
     SetAccountData(AccountDataType(type), adata);
 }
 
@@ -1085,8 +1084,12 @@ void WorldSession::HandleTeleportToUnitOpcode(WorldPacket& recv_data)
 {
     std::string playerName;
     recv_data >> playerName;
-    playerName = ".goname " + playerName;
-    ProcessChatMessageAfterSecurityCheck(playerName, LANG_UNIVERSAL, CHAT_MSG_SYSTEM);
+    if (playerName.length() > MAX_PLAYER_NAME)
+        return;
+
+    char txt[21] = {};
+    sprintf(txt, ".goname %s", playerName.c_str());
+    ProcessChatMessageAfterSecurityCheck(txt, LANG_UNIVERSAL, CHAT_MSG_SYSTEM);
 }
 
 void WorldSession::HandleWorldTeleportOpcode(WorldPacket& recv_data)

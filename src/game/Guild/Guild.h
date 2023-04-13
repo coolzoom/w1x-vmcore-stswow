@@ -235,7 +235,7 @@ class Guild
         int32 GetBackgroundColor() const { return m_BackgroundColor; }
 
         void SetLeader(ObjectGuid guid);
-        GuildAddStatus AddMember(ObjectGuid plGuid, uint32 plRank);
+        GuildAddStatus AddMember(ObjectGuid plGuid, uint32 plRank, uint32 petitionId = 0);
         bool DelMember(ObjectGuid guid, bool isDisbanding = false);
         //lowest rank is the count of ranks - 1 (the highest rank_id in table)
         uint32 GetLowestRank() const { return m_Ranks.size() - 1; }
@@ -252,8 +252,8 @@ class Guild
         bool LoadRanksFromDB(QueryResult* guildRanksResult);
         bool LoadMembersFromDB(QueryResult* guildMembersResult);
 
-        void BroadcastToGuild(WorldSession* session, std::string const& msg, uint32 language = LANG_UNIVERSAL);
-        void BroadcastToOfficers(WorldSession* session, std::string const& msg, uint32 language = LANG_UNIVERSAL);
+        void BroadcastToGuild(WorldSession* session, char const* msg, uint32 language = LANG_UNIVERSAL);
+        void BroadcastToOfficers(WorldSession* session, char const* msg, uint32 language = LANG_UNIVERSAL);
         void BroadcastPacketToRank(WorldPacket* packet, uint32 rankId);
         void BroadcastPacket(WorldPacket* packet);
 
