@@ -132,7 +132,7 @@ jobs:
           copy "c:/Program Files/OpenSSL/bin/libssl-1_1-x64.dll" ${{github.workspace}}/bin/Release/libssl-1_1-x64.dll
           copy "c:/Program Files/OpenSSL/bin/libcrypto-1_1-x64.dll" ${{github.workspace}}/bin/Release/libcrypto-1_1-x64.dll
           copy ${{github.workspace}}/dep/windows/lib/x64_release/libeay32.dll ${{github.workspace}}/bin/Release/libeay32.dll
-          
+
           7z a -tzip ${{env.ARCHIVE_FILENAME}} Release
     - name: Archive this artefact
       uses: actions/upload-artifact@v2
