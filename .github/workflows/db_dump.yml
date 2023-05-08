@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - '**.sql'
-      - '.github/workflows/**.yml'
+      - '.github/workflows/db_dump.yml'
   schedule:
     - cron: '0 1,13 * * *'
     # runs at minutes 0 of 1 and 13th hour of everyday
@@ -23,7 +23,7 @@ env:
   REALMLIST : "INSERT INTO realmd.realmlist (name, realmbuilds) VALUES (\'Lightbringer\', \'5875 6005 6141 \');"
 jobs:
   build:
-    runs-on: ubuntu-18.04 # 18.04 has mysql5.7 and latest(20.04) has mysql8
+    runs-on: ubuntu-latest # 18.04 has mysql5.7 and latest(20.04) has mysql8
 
     # ... some other config ...
 

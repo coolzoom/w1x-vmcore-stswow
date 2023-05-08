@@ -329,9 +329,11 @@ enum eConfigUInt32Values
     CONFIG_UINT32_AC_MOVEMENT_CHEAT_EXPLORE_HIGH_LEVEL_PENALTY,
     CONFIG_UINT32_AC_MOVEMENT_CHEAT_FORBIDDEN_AREA_THRESHOLD,
     CONFIG_UINT32_AC_MOVEMENT_CHEAT_FORBIDDEN_AREA_PENALTY,
-    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_PERIOD,
+    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_PERIOD,
     CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_PACKETS,
-    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_TURNS,
+    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_TURNS_MOUSE,
+    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_TURNS_KEYBOARD,
+    CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_MIN_TURNS_ABNORMAL,
     CONFIG_UINT32_AC_MOVEMENT_CHEAT_BOTTING_PENALTY,
     CONFIG_UINT32_MOVEMENT_CHANGE_ACK_TIME,
     CONFIG_UINT32_AC_WARDEN_NUM_SCANS,
@@ -934,7 +936,6 @@ class World
         Messager<World>& GetMessager() { return m_messager; }
 
         LFGQueue& GetLFGQueue() { return m_lfgQueue; }
-        void StartLFGQueueThread();
     protected:
         void _UpdateGameTime();
         // callback for UpdateRealmCharacters
@@ -998,7 +999,7 @@ class World
 
         // Housing this here but logically it is completely asynchronous - TODO: Separate this and unify with BG queue
         LFGQueue m_lfgQueue;
-        std::thread m_lfgQueueThread;
+        std::unique_ptr<std::thread> m_lfgQueueThread;
 
         // for max speed access
         static float m_MaxVisibleDistanceOnContinents;
