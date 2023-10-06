@@ -152,7 +152,7 @@ void BattleGroundAB::StartingEventCloseDoors()
 {
     // despawn buffs
     for (int i = 0; i < BG_AB_NODES_MAX * 3; ++i)
-        SpawnBGObject(m_bgObjects[BG_AB_OBJECT_SPEEDBUFF_STABLES + i], RESPAWN_ONE_DAY);
+        SpawnBGObject(m_bgObjects[BG_AB_OBJECT_SPEEDBUFF_STABLES + i], RESPAWN_NEVER);
 }
 
 void BattleGroundAB::StartingEventOpenDoors()
@@ -164,6 +164,7 @@ void BattleGroundAB::StartingEventOpenDoors()
         SpawnBGObject(m_bgObjects[BG_AB_OBJECT_SPEEDBUFF_STABLES + buff + i * 3], RESPAWN_IMMEDIATELY);
     }
     OpenDoorEvent(BG_EVENT_DOOR);
+    SpawnEvent(BG_EVENT_GHOST_GATE, 0, false, true);
 }
 
 void BattleGroundAB::AddPlayer(Player* player)
@@ -451,9 +452,9 @@ bool BattleGroundAB::SetupBattleGround()
     //buffs
     for (int i = 0; i < BG_AB_NODES_MAX; ++i)
     {
-        if (!AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i, g_buffEntries[0], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2), RESPAWN_ONE_DAY)
-                || !AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i + 1, g_buffEntries[1], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2), RESPAWN_ONE_DAY)
-                || !AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i + 2, g_buffEntries[2], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2), RESPAWN_ONE_DAY)
+        if (!AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i, g_buffEntries[0], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2))
+                || !AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i + 1, g_buffEntries[1], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2))
+                || !AddObject(BG_AB_OBJECT_SPEEDBUFF_STABLES + 3 * i + 2, g_buffEntries[2], BG_AB_BuffPositions[i][0], BG_AB_BuffPositions[i][1], BG_AB_BuffPositions[i][2], BG_AB_BuffPositions[i][3], 0, 0, sin(BG_AB_BuffPositions[i][3] / 2), cos(BG_AB_BuffPositions[i][3] / 2))
            )
             sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BatteGroundAB: Failed to spawn buff object!");
     }
@@ -489,6 +490,8 @@ void BattleGroundAB::Reset()
         m_activeEvents[i] = BG_AB_NODE_TYPE_NEUTRAL;
     }
 
+    // ghost gates spawned at beginning
+    m_activeEvents[BG_EVENT_GHOST_GATE] = 0;
 }
 
 void BattleGroundAB::EndBattleGround(Team winner)

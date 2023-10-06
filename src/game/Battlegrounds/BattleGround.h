@@ -27,10 +27,12 @@
 #include "Map.h"
 #include "ByteBuffer.h"
 #include "ObjectGuid.h"
+#include "WorldStates.h"
 
 // magic event-numbers
 #define BG_EVENT_NONE 255
 // those generic events should get a high event id
+#define BG_EVENT_GHOST_GATE 253
 #define BG_EVENT_DOOR 254
 
 
@@ -134,12 +136,10 @@ enum BattleGroundTimeIntervals
     INVITE_ACCEPT_WAIT_TIME         = 80000,                // ms
     TIME_TO_AUTOREMOVE              = 120000,               // ms
     MAX_OFFLINE_TIME                = 30,                   // secs
-    RESPAWN_ONE_DAY                 = 86400,                // secs
     RESPAWN_IMMEDIATELY             = 0,                    // secs
+    RESPAWN_2MINUTES                = 120,                  // secs
     BUFF_RESPAWN_TIME               = 180,                  // secs
-    RESPAWN_FOUR_DAYS               = 345600,               // secs
-    DESPAWN_IMMEDIATELY             = 345601,               // secs
-    RESPAWN_2MINUTES                = 120
+    RESPAWN_NEVER                   = 31536000,             // secs (1 year)
 };
 
 enum BattleGroundStartTimeIntervals
@@ -394,6 +394,7 @@ class BattleGround
         BattleGroundScoreMap::const_iterator GetPlayerScoresBegin() const { return m_playerScores.begin(); }
         BattleGroundScoreMap::const_iterator GetPlayerScoresEnd() const { return m_playerScores.end(); }
         uint32 GetPlayerScoresSize() const { return m_playerScores.size(); }
+        WorldPacket const* GetFinalScorePacket() const { return &m_finalScore; }
 
         void StartBattleGround();
         void StopBattleGround();
@@ -528,7 +529,7 @@ class BattleGround
         // TODO drop m_BGObjects
         BGObjects m_bgObjects;
         void SpawnBGObject(ObjectGuid guid, uint32 respawnTime);
-        bool AddObject(uint32 type, uint32 entry, float x, float y, float z, float o, float rotation0, float rotation1, float rotation2, float rotation3, uint32 respawnTime = 0);
+        bool AddObject(uint32 type, uint32 entry, float x, float y, float z, float o, float rotation0, float rotation1, float rotation2, float rotation3);
         void SpawnBGCreature(ObjectGuid guid, BattleGroundCreatureSpawnMode mode);
         bool DelObject(uint32 type);
 
@@ -592,6 +593,7 @@ class BattleGround
         BattleGroundTypeId m_typeId;
         BattleGroundStatus m_status;
         BattleGroundWinner  m_winner;
+        WorldPacket m_finalScore;
 
         uint32 m_clientInstanceId;                          //the instance-id which is sent to the client and without any other internal use
         uint32 m_startTime;
@@ -645,22 +647,19 @@ class BattleGround
 // helper functions for world state list fill
 inline void FillInitialWorldState(ByteBuffer& data, uint32& count, uint32 state, uint32 value)
 {
-    data << uint32(state);
-    data << uint32(value);
+    WriteInitialWorldStatePair(data, state, value);
     ++count;
 }
 
 inline void FillInitialWorldState(ByteBuffer& data, uint32& count, uint32 state, int32 value)
 {
-    data << uint32(state);
-    data << int32(value);
+    WriteInitialWorldStatePair(data, state, value);
     ++count;
 }
 
 inline void FillInitialWorldState(ByteBuffer& data, uint32& count, uint32 state, bool value)
 {
-    data << uint32(state);
-    data << uint32(value?1:0);
+    WriteInitialWorldStatePair(data, state, value ? 1 : 0);
     ++count;
 }
 
@@ -674,8 +673,7 @@ inline void FillInitialWorldState(ByteBuffer& data, uint32& count, WorldStatePai
 {
     for(WorldStatePair const* itr = array; itr->state; ++itr)
     {
-        data << uint32(itr->state);
-        data << uint32(itr->value);
+        WriteInitialWorldStatePair(data, itr->state, itr->value);
         ++count;
     }
 }

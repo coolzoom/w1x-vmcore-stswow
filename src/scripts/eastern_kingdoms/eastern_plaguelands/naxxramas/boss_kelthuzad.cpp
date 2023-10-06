@@ -696,6 +696,11 @@ struct boss_kelthuzadAI : public ScriptedAI
                         events.Repeat(5000 - timeSinceLastFrostBlast);
                         break;
                     }
+                    else if (timeSinceLastShadowFissure < 5000)
+                    {
+                        events.Repeat(5000 - timeSinceLastShadowFissure);
+                        break;
+                    }
                     if (DoCastSpellIfCan(m_creature, SPELL_FROST_BOLT_NOVA) == CAST_OK)
                     {
                         events.Repeat(Seconds(urand(15, 17)));
@@ -707,14 +712,14 @@ struct boss_kelthuzadAI : public ScriptedAI
                 }
                 case EVENT_FROST_BLAST:
                 {
-                    if (timeSinceLastShadowFissure < 4000)
+                    if (timeSinceLastShadowFissure < 5000)
                     {
-                        events.Repeat(4000 - timeSinceLastShadowFissure);
+                        events.Repeat(5000 - timeSinceLastShadowFissure);
                         break;
                     }
-                    else if (timeSinceLastAEFrostBolt < 5000)
+                    else if (timeSinceLastAEFrostBolt < 8000)
                     {
-                        events.Repeat(5000 - timeSinceLastAEFrostBolt);
+                        events.Repeat(8000 - timeSinceLastAEFrostBolt);
                         break;
                     }
                     if (m_creature->IsNonMeleeSpellCasted())
@@ -747,9 +752,14 @@ struct boss_kelthuzadAI : public ScriptedAI
                 }
                 case EVENT_SHADOW_FISSURE:
                 {
-                    if (timeSinceLastFrostBlast < 4000)
+                    if (timeSinceLastFrostBlast < 5000)
                     {
-                        events.Repeat(4000 - timeSinceLastFrostBlast);
+                        events.Repeat(5000 - timeSinceLastFrostBlast);
+                        break;
+                    }
+                    else if (timeSinceLastAEFrostBolt < 8000)
+                    {
+                        events.Repeat(8000 - timeSinceLastAEFrostBolt);
                         break;
                     }
                     if (m_creature->IsNonMeleeSpellCasted())
@@ -854,6 +864,8 @@ struct mob_abomAI : public kt_p1AddAI
     void Reset() override
     {
         mortalWoundTimer = 7500;
+        m_creature->SetMaxHealth(90000);
+        m_creature->SetHealth(90000);
     }
 
     void UpdateAI(uint32 const diff) override
@@ -881,7 +893,11 @@ struct mob_soldierAI : public kt_p1AddAI
         Reset();
     }
 
-    void Reset() override { }
+    void Reset() override
+    { 
+        m_creature->SetMaxHealth(2000);
+        m_creature->SetHealth(2000);
+    }
 
     void UpdateAI(uint32 const diff) override
     {
@@ -904,13 +920,18 @@ struct mob_soldierAI : public kt_p1AddAI
 
 struct mob_soulweaverAI : public kt_p1AddAI
 {
-    mob_soulweaverAI(Creature* pCreature) : kt_p1AddAI(pCreature) { }
+    mob_soulweaverAI(Creature* pCreature) : kt_p1AddAI(pCreature)
+    { 
+        Reset();
+    }
 
     bool hasHitSomeone;
 
     void Reset() override
     {
         hasHitSomeone = false;
+        m_creature->SetMaxHealth(70000);
+        m_creature->SetHealth(70000);
     }
 
     void UpdateAI(uint32 const diff) override
@@ -953,7 +974,7 @@ struct mob_guardian_icecrownAI : public ScriptedAI
     void JustReachedHome() override
     {
         m_creature->DeleteLater();
-        ///m_creature->ForcedDespawn(1);
+    //  m_creature->ForcedDespawn(1);
     }
 
     void DispellShackle(Creature* pC)

@@ -127,24 +127,57 @@ Player* PartyBotAI::GetPartyLeader() const
     return nullptr;
 }
 
-bool PartyBotAI::RunAwayFromTarget(Unit* pTarget)
+bool PartyBotAI::IsValidDistancingTarget(Unit* pTarget, Unit* pEnemy)
+{
+    if (pTarget->IsInWorld() && pTarget->IsAlive() &&
+        pTarget->GetMap() == me->GetMap())
+    {
+        float const distance = me->GetDistance(pTarget);
+        if (distance >= 15.0f && distance <= 30.0f &&
+            pTarget->GetDistance(pEnemy) >= 15.0f)
+            return true;
+    }
+     
+    return false;
+}
+
+Unit* PartyBotAI::GetDistancingTarget(Unit* pEnemy)
 {
     if (Player* pLeader = GetPartyLeader())
+        if (IsValidDistancingTarget(pLeader, pEnemy))
+            return pLeader;
+
+    Unit* pNonTank = nullptr;
+    Group* pGroup = me->GetGroup();
+    for (GroupReference* itr = pGroup->GetFirstMember(); itr != nullptr; itr = itr->next())
     {
-        if (pLeader->IsInWorld() &&
-            pLeader->GetMap() == me->GetMap())
+        if (Player* pMember = itr->getSource())
         {
-            float const distance = me->GetDistance(pLeader);
-            if (distance >= 15.0f && distance <= 30.0f &&
-                pLeader->GetDistance(pTarget) >= 15.0f)
+            if (pMember == me)
+                continue;
+
+            if (IsValidDistancingTarget(pMember, pEnemy))
             {
-                me->MonsterMove(pLeader->GetPositionX(), pLeader->GetPositionY(), pLeader->GetPositionZ());
-                return true;
+                if (IsTankingForm(pMember->GetShapeshiftForm()) || IsWearingShield(pMember))
+                    return pMember;
+                else
+                    pNonTank = pMember;
             }
         }
     }
 
-    return me->GetMotionMaster()->MoveDistance(pTarget, 15.0f);
+    return pNonTank;
+}
+
+bool PartyBotAI::RunAwayFromTarget(Unit* pEnemy)
+{
+    if (Unit* pTarget = GetDistancingTarget(pEnemy))
+    {
+        me->MonsterMove(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ());
+        return true;
+    }
+
+    return me->GetMotionMaster()->MoveDistance(pEnemy, 15.0f);
 }
 
 bool PartyBotAI::DrinkAndEat()
@@ -232,10 +265,49 @@ bool PartyBotAI::ShouldAutoRevive() const
 
 bool PartyBotAI::CanTryToCastSpell(Unit const* pTarget, SpellEntry const* pSpellEntry) const
 {
-    if (pSpellEntry->IsAreaOfEffectSpell() && !m_marksToCC.empty())
+    if (!CombatBotBaseAI::CanTryToCastSpell(pTarget, pSpellEntry))
         return false;
 
-    return CombatBotBaseAI::CanTryToCastSpell(pTarget, pSpellEntry);
+    if (pSpellEntry->IsAreaOfEffectSpell() && !pSpellEntry->IsPositiveSpell())
+    {
+        if (!m_marksToCC.empty())
+            return false;
+
+        // do not cast aoe if it will pull aggro
+        if (m_role != ROLE_TANK)
+        {
+            float radius;
+            if (pSpellEntry->EffectRadiusIndex[0])
+                radius = Spells::GetSpellRadius(sSpellRadiusStore.LookupEntry(pSpellEntry->EffectRadiusIndex[0]));
+            else if (pSpellEntry->EffectRadiusIndex[1])
+                radius = Spells::GetSpellRadius(sSpellRadiusStore.LookupEntry(pSpellEntry->EffectRadiusIndex[1]));
+            else if (pSpellEntry->EffectRadiusIndex[2])
+                radius = Spells::GetSpellRadius(sSpellRadiusStore.LookupEntry(pSpellEntry->EffectRadiusIndex[2]));
+            else
+                radius = 10.0f;
+
+            std::list<Unit*> targets;
+            me->GetEnemyListInRadiusAround(pTarget, radius, targets);
+
+            for (auto const& pEnemy : targets)
+            {
+                if (((pEnemy->GetLevel() + 5) > me->GetLevel()) &&
+                    ((pEnemy->GetHealth() * 4) > me->GetHealth()) &&
+                    pEnemy->GetVictim() && pEnemy->GetVictim() != me &&
+                    pEnemy->IsValidAttackTarget(me) &&
+                    pEnemy->CanHaveThreatList())
+                {
+                    float const myThreat = pEnemy->GetThreatManager().getThreat(me);
+                    float const victimThreat = pEnemy->GetThreatManager().getThreat(pEnemy->GetVictim());
+                    
+                    if (victimThreat < (myThreat + me->GetMaxHealth()))
+                        return false;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 bool PartyBotAI::CanUseCrowdControl(SpellEntry const* pSpellEntry, Unit* pTarget) const
@@ -454,29 +526,6 @@ void PartyBotAI::AddToPlayerGroup()
     } 
 }
 
-void PartyBotAI::SendFakePacket(uint16 opcode)
-{
-    switch (opcode)
-    {
-        case CMSG_LOOT_ROLL:
-        {
-            if (m_lootResponses.empty())
-                return;
-
-            auto loot = m_lootResponses.begin();
-            WorldPacket data(CMSG_LOOT_ROLL);
-            data << uint64((*loot).guid);
-            data << uint32((*loot).slot);
-            data << uint8(0); // pass
-            m_lootResponses.erase(loot);
-            me->GetSession()->HandleLootRoll(data);
-            return;
-        }
-    }
-
-    CombatBotBaseAI::SendFakePacket(opcode);
-}
-
 void PartyBotAI::OnPacketReceived(WorldPacket const* packet)
 {
     //printf("Bot received %s\n", LookupOpcodeName(packet->GetOpcode()));
@@ -488,14 +537,6 @@ void PartyBotAI::OnPacketReceived(WorldPacket const* packet)
         {
             if (m_initialized)
                 m_resetSpellData = true;
-            return;
-        }
-        case SMSG_LOOT_START_ROLL:
-        {
-            uint64 guid = *((uint64*)(*packet).contents());
-            uint32 slot = *(((uint32*)(*packet).contents())+2);
-            m_lootResponses.emplace_back(LootResponseData(guid, slot ));
-            botEntry->m_pendingResponses.push_back(CMSG_LOOT_ROLL);
             return;
         }
     }
@@ -606,7 +647,7 @@ void PartyBotAI::UpdateAI(uint32 const diff)
     {
         if (m_receivedBgInvite)
         {
-            SendFakePacket(CMSG_BATTLEFIELD_PORT);
+            SendBattlefieldPortPacket();
             m_receivedBgInvite = false;
             return;
         }
@@ -2292,7 +2333,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
             }
 
             if (m_spells.warrior.pShieldBash &&
-                IsWearingShield() &&
+                IsWearingShield(me) &&
                 CanTryToCastSpell(pVictim, m_spells.warrior.pShieldBash))
             {
                 if (DoCastSpell(pVictim, m_spells.warrior.pShieldBash) == SPELL_CAST_OK)
@@ -2332,7 +2373,7 @@ void PartyBotAI::UpdateInCombatAI_Warrior()
         }
 
         if (me->GetShapeshiftForm() == FORM_DEFENSIVESTANCE &&
-            IsWearingShield())
+            IsWearingShield(me))
         {
             if (!me->GetAttackers().empty())
             {

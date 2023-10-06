@@ -49,6 +49,7 @@
 #include "InstanceData.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"
+#include "scriptPCH.h"
 
 using namespace Spells;
 
@@ -257,7 +258,7 @@ void Spell::EffectResurrectNew(SpellEffectIndex effIdx)
     uint32 health = damage;
     uint32 mana = m_spellInfo->EffectMiscValue[effIdx];
     pTarget->SetResurrectRequestData(m_caster->GetObjectGuid(), m_caster->GetMapId(), m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ(), health, mana);
-    SendResurrectRequest(pTarget);
+    SendResurrectRequest(pTarget, m_casterUnit && m_casterUnit->IsSpiritHealer());
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(unitTarget->GetObjectGuid()));
 }
@@ -599,6 +600,14 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                 case 28345: // [Event: Scourge Invasion] (Communique Trigger) triggers (Communique, Camp-to-Relay)?
                 {
                     unitTarget->CastSpell(unitTarget, 28281, true);
+                    return;
+                }
+                case 32061: // EPL PvP A Game of Towers: (TXT) ToWoW - Tower Kill Credit (DND)
+                {
+                    if (Player* pPlayer = ToPlayer(m_casterUnit))
+                        if (Creature* pCreature = ToCreature(unitTarget))
+                            pPlayer->KilledMonsterCredit(pCreature->GetEntry(), 0);
+
                     return;
                 }
                 case 23383: // Alliance Flag Click
@@ -1153,15 +1162,26 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                     if (unitTarget->GetTypeId() != TYPEID_PLAYER)
                         return;
 
-                    // Need remove self if Lightning Shield not active
-                    Unit::SpellAuraHolderMap const& auras = unitTarget->GetSpellAuraHolderMap();
-                    for (const auto& aura : auras)
+                    if (!m_triggeredBySpellInfo)
+                        return;
+
+                    switch (m_triggeredBySpellInfo->Id)
                     {
-                        SpellEntry const* spell = aura.second->GetSpellProto();
-                        if (spell->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_LIGHTNING_SHIELD>())
-                            return;
+                        case 28820: // Shaman T3 8-Piece Bonus
+                        {
+                            // Need remove self if Lightning Shield not active
+                            Unit::SpellAuraHolderMap const& auras = unitTarget->GetSpellAuraHolderMap();
+                            for (const auto& aura : auras)
+                            {
+                                SpellEntry const* spell = aura.second->GetSpellProto();
+                                if (spell->IsFitToFamily<SPELLFAMILY_SHAMAN, CF_SHAMAN_LIGHTNING_SHIELD>())
+                                    return;
+                            }
+                            unitTarget->RemoveAurasDueToSpell(28820);
+                            break;
+                        }
                     }
-                    unitTarget->RemoveAurasDueToSpell(28820);
+                    
                     return;
                 }
                 case 19411:                                 // Lava Bomb
@@ -1825,9 +1845,6 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                         case 19266:
                             spellId = 19254;
                             break; // Rank 6
-                        case 25461:
-                            spellId = 25460;
-                            break; // Rank 7
                         default:
                             sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "Spell::EffectDummy: Spell 28598 triggered by unhandeled spell %u", m_triggeredByAuraSpell->Id);
                             return;
@@ -2136,7 +2153,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIdx)
     if (spellInfo->EquippedItemClass >= 0 && m_caster->GetTypeId() == TYPEID_PLAYER)
     {
         // main hand weapon required
-        if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_MAIN_HAND)
+        if (spellInfo->HasAttribute(SPELL_ATTR_EX3_REQUIRES_MAIN_HAND_WEAPON))
         {
             Item* item = ((Player*)m_caster)->GetWeaponForAttack(BASE_ATTACK, true, false);
 
@@ -2150,7 +2167,7 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIdx)
         }
 
         // offhand hand weapon required
-        if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
+        if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_REQUIRES_OFFHAND_WEAPON)
         {
             Item* item = ((Player*)m_caster)->GetWeaponForAttack(OFF_ATTACK, true, false);
 
@@ -3163,8 +3180,8 @@ void Spell::EffectDispel(SpellEffectIndex effIdx)
     // Ok if exist some buffs for dispel try dispel it
     if (!dispelList.empty())
     {
-        std::list<std::pair<SpellAuraHolder*, uint32> > successList; // (spellId,casterGuid)
-        std::list < uint32 > failList; // spellId
+        std::vector<std::pair<SpellAuraHolder*, uint32> > successList; // (spellId,casterGuid)
+        std::vector < uint32 > failList; // spellId
 
         // some spells have effect value = 0 and all from its by meaning expect 1
         if (!damage)
@@ -5210,6 +5227,29 @@ void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
                     }
                     return;
                 }
+                case 30882: // EPL PvP A Game of Towers: Tower Capture Test (DND)
+                {
+                    std::list<Player*> players;
+                    m_casterUnit->GetAlivePlayerListInRange(m_casterUnit, players, VISIBILITY_DISTANCE_NORMAL);
+                    for (const auto& pTarget : players)
+                    {
+                        if (!pTarget->IsFriendlyTo(m_casterUnit))
+                            continue;
+
+                        if (!pTarget->IsOutdoorPvPActive())
+                            continue;
+
+                        pTarget->CastSpell(pTarget, 31929, true);
+                    }
+                    return;
+                }
+                case 31929: // EPL PvP A Game of Towers: Tower Capture (DND)
+                {
+                    if (Player* pTarget = ToPlayer(unitTarget))
+                        pTarget->CastSpell(pTarget, 32061, true);
+
+                    return;
+                }
             }
             break;
         }
@@ -5331,7 +5371,15 @@ void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
             {
                 if (!unitTarget || !unitTarget->IsAlive())
                     return;
+
                 int32 heal = dither(damage);
+                if (m_casterUnit)
+                {
+                    if (m_casterUnit->HasAura(28853))
+                        heal += 53.0f;  // Libram of Divinity
+                    if (m_casterUnit->HasAura(28851))
+                        heal += 83.0f;  // Libram of Light
+                }
 
                 int32 spellid = m_spellInfo->Id;            // send main spell id as basepoints for not used effect
                 m_caster->CastCustomSpell(unitTarget, 19993, heal, spellid, {}, true);
@@ -6097,7 +6145,7 @@ void Spell::EffectResurrect(SpellEffectIndex effIdx)
     uint32 mana   = ditheru(pTarget->GetMaxPower(POWER_MANA) * damage / 100);
 
     pTarget->SetResurrectRequestData(m_caster->GetObjectGuid(), m_caster->GetMapId(), m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ(), health, mana);
-    SendResurrectRequest(pTarget);
+    SendResurrectRequest(pTarget, m_casterUnit && m_casterUnit->IsSpiritHealer());
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(unitTarget->GetObjectGuid()));
 }
@@ -6400,7 +6448,12 @@ void Spell::EffectDispelMechanic(SpellEffectIndex effIdx)
         next = iter;
         ++next;
         SpellEntry const* spell = iter->second->GetSpellProto();
-        if (iter->second->HasMechanic(mechanic))
+
+        // World of Warcraft Client Patch 1.7.0 (2005-09-13)
+        // - Escape Artist works with Frost Nova and Frost Trap again.
+        if (iter->second->HasMechanic(mechanic) &&
+            // attribute removed from Frost Nova in 1.7, which likely means this effect ignores it
+           !spell->HasAttribute(SPELL_ATTR_NO_AURA_CANCEL))
         {
             unitTarget->RemoveAurasDueToSpell(spell->Id);
             if (Auras.empty())

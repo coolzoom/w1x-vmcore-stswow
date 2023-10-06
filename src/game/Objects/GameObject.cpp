@@ -105,7 +105,7 @@ GameObject::~GameObject()
     delete i_AI;
     delete m_model;
 
-    MANGOS_ASSERT(m_dynObjGUIDs.empty());
+    MANGOS_ASSERT(m_spellDynObjects.empty());
 }
 
 GameObject* GameObject::CreateGameObject(uint32 entry)
@@ -118,7 +118,7 @@ GameObject* GameObject::CreateGameObject(uint32 entry)
 
 void GameObject::AddToWorld()
 {
-    ///- Register the gameobject for guid lookup
+    // Register the gameobject for guid lookup
     if (!IsInWorld())
     {
         GetMap()->InsertObject<GameObject>(GetObjectGuid(), this);
@@ -148,7 +148,7 @@ void GameObject::AIM_Initialize()
 
 void GameObject::RemoveFromWorld()
 {
-    ///- Remove the gameobject from the accessor
+    // Remove the gameobject from the accessor
     if (IsInWorld())
     {
         if (AI())
@@ -334,7 +334,7 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
 
     UpdatePendingProcs(update_diff);
 
-    ///- UpdateAI
+    // UpdateAI
     if (i_AI)
         i_AI->UpdateAI(update_diff);
 
@@ -1469,7 +1469,7 @@ void GameObject::Use(Unit* user)
             if (user->GetTypeId() != TYPEID_PLAYER)
                 return;
 
-            if (GetFactionTemplateId())
+            if (GetFactionTemplateId() && !GetGOInfo()->chest.minSuccessOpens && !GetGOInfo()->chest.maxSuccessOpens)
             {
                 std::list<Unit*> targets;
                 MaNGOS::AnyFriendlyUnitInObjectRangeCheck check(this, 10.0f);

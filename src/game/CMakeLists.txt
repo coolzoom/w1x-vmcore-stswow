@@ -148,6 +148,7 @@ set (game_SRCS
     Maps/ZoneScriptMgr.cpp
     Maps/Pool/PoolManager.cpp
     Movement/ConfusedMovementGenerator.cpp
+    Movement/CyclicMovementGenerator.cpp
     Movement/FearMovementGenerator.cpp
     Movement/FleeingMovementGenerator.cpp
     Movement/FollowerReference.cpp
@@ -219,6 +220,7 @@ set (game_SRCS
     AuraRemovalMgr.h
     AutoBroadCastMgr.h
     Camera.h
+    ClientDefines.h
     Conditions.h
     CreatureGroups.h
     Formulas.h
@@ -251,6 +253,7 @@ set (game_SRCS
     Weather.h
     World.h
     WorldSession.h
+    WorldStates.h
     AI/BasicAI.h
     AI/CreatureAI.h
     AI/CreatureAIImpl.h
@@ -332,6 +335,7 @@ set (game_SRCS
     Maps/ZoneScriptMgr.h
     Maps/Pool/PoolManager.h
     Movement/ConfusedMovementGenerator.h
+    Movement/CyclicMovementGenerator.h
     Movement/FearMovementGenerator.h
     Movement/FleeingMovementGenerator.h
     Movement/FollowerReference.h
