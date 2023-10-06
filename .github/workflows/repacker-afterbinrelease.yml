@@ -108,8 +108,8 @@ jobs:
           copy ${{github.workspace}}/Release/tbbmalloc_proxy_debug.dll ${{github.workspace}}/contrib/repack/MaNGOS/tbbmalloc_proxy_debug.dll
           copy ${{github.workspace}}/Release/ACE.dll ${{github.workspace}}/contrib/repack/MaNGOS/ACE.dll
           copy ${{github.workspace}}/Release/libmysql.dll ${{github.workspace}}/contrib/repack/MaNGOS/libmysql.dll
-          copy ${{github.workspace}}/Release/libssl-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libssl-1_1-x64.dll
-          copy ${{github.workspace}}/Release/libcrypto-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libcrypto-1_1-x64.dll
+          # copy ${{github.workspace}}/Release/libssl-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libssl-1_1-x64.dll
+          # copy ${{github.workspace}}/Release/libcrypto-1_1-x64.dll ${{github.workspace}}/contrib/repack/MaNGOS/libcrypto-1_1-x64.dll
           copy ${{github.workspace}}/Release/libeay32.dll ${{github.workspace}}/contrib/repack/MaNGOS/libeay32.dll
           
     - name: copy data files
