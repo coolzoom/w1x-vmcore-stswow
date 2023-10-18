@@ -393,14 +393,13 @@ void Spell::FillTargetMap()
 
         // TODO: find a way so this is not needed?
         // for area auras always add caster as target (needed for totems for example)
-        if (m_casterUnit && IsAreaAuraEffect(m_spellInfo->Effect[i]))
-            AddUnitTarget(m_casterUnit, SpellEffectIndex(i));
-
-#if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_11_2
-        // Pre 1.12 most of the quest complete spells don't have correct target set.
-        if (m_casterUnit && m_spellInfo->Effect[i] == SPELL_EFFECT_QUEST_COMPLETE)
-            AddUnitTarget(m_casterUnit, SpellEffectIndex(i));
-#endif
+        if (m_casterUnit)
+        {
+            if (IsAreaAuraEffect(m_spellInfo->Effect[i]) ||
+                m_spellInfo->Effect[i] == SPELL_EFFECT_LANGUAGE ||
+                m_spellInfo->Effect[i] == SPELL_EFFECT_QUEST_COMPLETE)
+                AddUnitTarget(m_casterUnit, SpellEffectIndex(i));
+        }
 
         // If same target already filled, use it
         // Example: AoE fear has effects speedup and modfear, with maxtargets = 1
@@ -3380,7 +3379,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     z = waterLevel;
                 }
 
-                if (!MapManager::IsValidMapCoord(unitTarget->GetMapId(), x, y, z))
+                if (!MapManager::IsValidMapCoord(pUnitTarget->GetMapId(), x, y, z))
                     break;
 
                 pUnitTarget->GetMap()->GetLosHitPosition(srcX, srcY, srcZ, x, y, z, -0.5f);
@@ -6479,11 +6478,11 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (strict)
                 {
                     SpellRangeEntry const* spellRange = sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex);
-                    Unit* unitTarget = m_targets.getUnitTarget();
-                    if (unitTarget && spellRange && spellRange->maxRange > 0.0f)
+                    Unit* pUnitTarget = m_targets.getUnitTarget();
+                    if (pUnitTarget && spellRange && spellRange->maxRange > 0.0f)
                     {
                         float x, y, z;
-                        unitTarget->GetPosition(x, y, z);
+                        pUnitTarget->GetPosition(x, y, z);
 
                         if (!m_casterUnit->IsInWater())
                         {
