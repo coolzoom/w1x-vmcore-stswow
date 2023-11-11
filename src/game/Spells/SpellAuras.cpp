@@ -1193,8 +1193,8 @@ void Aura::TriggerSpell()
                     // Brood Affliction: Bronze
                     case 23170:
                     {
-                        int rand = urand(0, 9);
-                        if (rand < 4)   // Ustaag <Nostalrius> : 40% chance
+                        int rand = urand(0, 3);
+                        if (rand < 1)   // https://docs.google.com/spreadsheets/d/1xwndyUVb3iYZ_arZskD-NKK50jaovrgcYR5wwPP2juc/edit?usp=sharing : 25% chance
                             target->CastSpell(target, 23171, true, nullptr, this);
                         return;
                     }
@@ -5081,16 +5081,25 @@ void Aura::HandleAuraModIncreaseHealth(bool apply, bool Real)
             }
             return;
         }
-        // Trinket BWL (Don de vie)
+        // Lifegiving Gem (gift of life)
         case 23782:
         {
             if (Real)
             {
-                target->HandleStatModifier(UNIT_MOD_HEALTH, TOTAL_PCT, 15.0f, apply);
                 if (apply)
                 {
+                    target->HandleStatModifier(UNIT_MOD_HEALTH, TOTAL_VALUE, m_modifier.m_amount, apply);
+                    target->ModifyHealth(m_modifier.m_amount);
                     int32 healAmount = dither(target->GetMaxHealth() * 0.15f);
                     target->CastCustomSpell(target, 23783, healAmount, {}, {}, true, nullptr, this);
+                }
+                else
+                {
+                    if (int32(target->GetHealth()) > m_modifier.m_amount)
+                        target->ModifyHealth(-m_modifier.m_amount);
+                    else if (target->IsAlive())
+                        target->SetHealth(1);
+                    target->HandleStatModifier(UNIT_MOD_HEALTH, TOTAL_VALUE, m_modifier.m_amount, apply);
                 }
             }
             return;
@@ -6866,6 +6875,15 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Uni
     m_makesTargetSecondaryFocus = !GetSpellProto()->IsPositiveSpell() && (GetSpellProto()->HasAuraInterruptFlag(AURA_INTERRUPT_DAMAGE_CANCELS)
                                                                     ||  m_spellProto->HasAura(SPELL_AURA_MOD_CONFUSE)
                                                                     ||  m_spellProto->HasAura(SPELL_AURA_MOD_FEAR));
+    //  Exception spells for targetsecondaryfocus:
+    switch (m_spellProto->Id)
+    {
+        case 23310:                                         // Chromaggus Time Lapse
+        case 23312:                                         // Chromaggus Time Lapse
+            m_makesTargetSecondaryFocus = true;
+            break;
+        
+    }
 }
 
 void SpellAuraHolder::AddAura(Aura* aura, SpellEffectIndex index)
