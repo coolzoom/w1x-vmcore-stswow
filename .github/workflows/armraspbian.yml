@@ -1,0 +1,41 @@
+# raspberry pi Raspbian Buster virtual environment based on docker and QEMU
+# to simulate the compile process
+# coolzoom Nov 2021
+name: Arm CI(Raspbian Buster for raspberry pi)
+
+on:
+  push:
+    paths-ignore:
+      - 'sql/**'
+  pull_request:
+    paths-ignore:
+      - 'sql/**'
+      
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+    #git checkout
+    - uses: actions/checkout@v2
+    # map the source to home folder
+    - name: docker setup
+      run: |
+        docker pull hannseman/raspbian:latest
+        docker run -itd --name vmpi -p 8085:8085 -p 3306:3306 -p 3724:3724 -v ${{github.workspace}}:/home hannseman/raspbian:latest
+        docker exec vmpi sh -c 'apt-get update'
+    - name: install deps
+      run: |
+        docker exec vmpi sh -c 'apt install g++ cmake git libace-dev libtbb-dev libmariadb-dev libmariadbclient-dev default-libmysqlclient-dev libssl-dev -y'
+        docker exec vmpi sh -c 'whereis g++'
+    - name: cmake
+      run: |
+        docker exec vmpi sh -c 'mkdir -p /home/build'
+        docker exec vmpi sh -c 'mkdir -p /home/_install'
+        docker exec vmpi sh -c 'cd /home/build'
+        docker exec vmpi sh -c 'cmake /home -DCMAKE_INSTALL_PREFIX=/home/_install -DWITH_WARNINGS=0 -DUSE_EXTRACTORS=1'
+    - name: make and install
+      run: |
+        docker exec vmpi sh -c 'make -j8'
+        docker exec vmpi sh -c 'make install'
