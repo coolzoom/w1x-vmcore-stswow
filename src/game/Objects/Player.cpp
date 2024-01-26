@@ -4969,7 +4969,7 @@ void Player::DeleteOldCharacters()
  */
 void Player::DeleteOldCharacters(uint32 keepDays)
 {
-    QueryResult* resultChars = CharacterDatabase.PQuery("SELECT `guid`, `deleted_account` FROM `characters` WHERE `deleted_time` IS NOT NULL AND `deleted_time` < '" UI64FMTD "' LIMIT 0,2", uint64(time(nullptr) - time_t(keepDays * DAY)));
+    QueryResult* resultChars = CharacterDatabase.PQuery("SELECT `guid`, `deleted_account` FROM `characters` WHERE `deleted_account` IS NOT NULL AND `deleted_time` IS NOT NULL AND `deleted_time` < '" UI64FMTD "' LIMIT 0,2", uint64(time(nullptr) - time_t(keepDays * DAY)));
     if (resultChars)
     {
         do
@@ -21253,6 +21253,13 @@ void Player::SendSpellRemoved(uint32 spellId) const
     WorldPacket data(SMSG_REMOVED_SPELL, 4);
     data << uint16(spellId);
     GetSession()->SendPacket(&data);
+}
+
+void Player::SendChannelUpdate(uint32 time) const
+{
+    WorldPacket data(MSG_CHANNEL_UPDATE, 4);
+    data << uint32(0);
+    SendDirectMessage(&data);
 }
 
 bool Player::HasMovementFlag(MovementFlags f) const
