@@ -17,7 +17,6 @@
 
 set(EXECUTABLE_NAME mangosd)
 set(EXECUTABLE_SRCS 
-  ChatSocket.h
   CliRunnable.h
   MaNGOSsoap.h
   Master.h
@@ -25,7 +24,6 @@ set(EXECUTABLE_SRCS
   soapH.h
   soapStub.h
   WorldRunnable.h
-  ChatSocket.cpp
   CliRunnable.cpp
   Main.cpp
   MaNGOSsoap.cpp
@@ -147,6 +145,7 @@ if(UNIX)
     ${OPENSSL_LIBRARIES}
     ${OPENSSL_EXTRA_LIBRARIES}
     ${ZLIB_LIBRARIES}
+    readline
   )
 endif()
 

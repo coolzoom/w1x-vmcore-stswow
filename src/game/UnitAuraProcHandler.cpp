@@ -976,6 +976,11 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 amount, uint
 
                     // heal amount
                     basepoints[0] = dither(triggerAmount * amount / 100);
+
+                    // don't heal for 0
+                    if (basepoints[0] < 1)
+                        basepoints[0] = 1;
+
                     pVictim->CastCustomSpell(pVictim, 15290, basepoints[0], {}, {}, true, castItem, triggeredByAura);
                     return SPELL_AURA_PROC_OK;                                // no hidden cooldown
                 }
@@ -1291,7 +1296,7 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 a
                 }
                 case 28200:                                 // Talisman of Ascendance
                 {
-                    if (procSpell && procSpell->IsAreaOfEffectSpell())
+                    if (procSpell && (procSpell->IsAreaOfEffectSpell() || procSpell->Effect[0] == SPELL_EFFECT_SCRIPT_EFFECT))
                         return SPELL_AURA_PROC_FAILED;
                     break;
                 }
