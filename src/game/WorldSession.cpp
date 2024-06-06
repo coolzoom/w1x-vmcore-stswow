@@ -188,7 +188,7 @@ void WorldSession::SendPacketImpl(WorldPacket const* packet)
         m_socket->CloseSocket();
 }
 
-#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_8_4
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_7_1
 void WorldSession::SendMovementPacket(WorldPacket const* packet)
 {
     // There is a maximum size packet.
@@ -442,7 +442,7 @@ bool WorldSession::Update(PacketFilter& updater)
 
         time_t const currTime = time(nullptr);
 
-#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_8_4
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_7_1
         // send these out every world update
         SendCompressedMovementPackets();
 
@@ -795,7 +795,7 @@ void WorldSession::LogoutPlayer(bool Save)
             Map::DeleteFromWorld(_player);
         }
 
-#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_8_4
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_7_1
         m_movementPacketCompressor.ClearBuffer();
 #endif
 
