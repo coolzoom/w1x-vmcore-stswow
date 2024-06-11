@@ -507,6 +507,7 @@ enum PlayerCheatOptions : uint16
     PLAYER_CHEAT_TRIGGER_PASS      = 0x100,
     PLAYER_CHEAT_IGNORE_TRIGGERS   = 0x200,
     PLAYER_CHEAT_DEBUG_TARGET_INFO = 0x400,
+    PLAYER_CHEAT_FIXED_Z           = 0x800,
 };
 
 typedef std::map<uint32, QuestStatusData> QuestStatusMap;
@@ -1020,6 +1021,7 @@ class Player final: public Unit
         void SetGMVisible(bool on, bool notify = false);
         
         void SetCheatFly(bool on, bool notify = false);
+        void SetCheatFixedZ(bool on, bool notify = false);
         void SetCheatGod(bool on, bool notify = false);
         void SetCheatNoCooldown(bool on, bool notify = false);
         void SetCheatInstantCast(bool on, bool notify = false);
@@ -1837,8 +1839,8 @@ class Player final: public Unit
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
 
-        uint32 m_lastFallTime;
-        float  m_lastFallZ;
+        // highest position we started falling from
+        float m_fallStartZ;
 
         // Recall position
         uint32 m_recallMap;
@@ -1923,13 +1925,13 @@ class Player final: public Unit
 
         bool HasMovementFlag(MovementFlags f) const;        // for script access to m_movementInfo.HasMovementFlag
         void UpdateFallInformationIfNeed(MovementInfo const& minfo, uint16 opcode);
-        void SetFallInformation(uint32 time, float z)
+        void SetFallInformation(float fallStartZ)
         {
-            m_lastFallTime = time;
-            m_lastFallZ = z;
+            m_fallStartZ = fallStartZ;
+
         }
         void HandleFall(MovementInfo const& movementInfo);
-        bool IsFalling() const { return GetPositionZ() < m_lastFallZ; }
+        bool IsFalling() const { return m_fallStartZ != 0; }
 
         bool IsControlledByOwnClient() const { return m_session->GetClientMoverGuid() == GetObjectGuid(); }
         void SetClientControl(Unit const* target, uint8 allowMove);
