@@ -38,7 +38,7 @@ class HmacHash
         void Finalize();
 
         uint8* GetDigest() { return m_digest; }
-        int constexpr GetLength() { return sizeof(m_digest); }
+        static int constexpr GetLength() { return sizeof(m_digest); }
 
     private:
         typedef struct hmac_ctx_st HMAC_CTX;

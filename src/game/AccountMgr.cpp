@@ -174,7 +174,7 @@ AccountOpResult AccountMgr::ChangePassword(uint32 accid, std::string new_passwd,
 
     bool update_sv = LoginDatabase.PExecute(
         "UPDATE `account` SET `v`='%s', `s`='%s' WHERE `id`='%u'",
-        v_hex, s_hex, accid);
+        v_hex.c_str(), s_hex.c_str(), accid);
 
     // also reset s and v to force update at next realmd login
     if (!update_sv)

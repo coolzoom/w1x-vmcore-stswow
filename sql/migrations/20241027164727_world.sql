@@ -16,15 +16,15 @@ INSERT INTO `gameobject` (`guid`, `id`, `map`, `position_x`, `position_y`, `posi
 (24053, 123309, 1, -7816.99, 228.785, -57.6589, 2.04204, 0, 0, 0.85264, 0.522499, 300, 300, 1, 100, 0, 10),
 (24054, 123309, 1, -7504.23, 1432.09, -81.8033, 0.436332, 0, 0, 0.21644, 0.976296, 300, 300, 1, 100, 0, 10);
 INSERT INTO `pool_template` (`entry`, `max_limit`, `description`, `flags`, `instance`, `patch_min`, `patch_max`) VALUES
-(3978, 1, 'Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus', 0, 0, 0, 10),
+(3990, 1, 'Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus', 0, 0, 0, 10),
 (3979, 1, 'Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus', 0, 0, 0, 10);
 INSERT INTO `pool_gameobject` (`guid`, `pool_entry`, `chance`, `description`, `patch_min`, `patch_max`) VALUES
-(23983, 3978, 0, 'Ooze Covered Rich Thorium Vein', 0, 10), -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
+(23983, 3990, 0, 'Ooze Covered Rich Thorium Vein', 0, 10), -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
 (24052, 3979, 0, 'Ooze Covered Rich Thorium Vein', 0, 10), -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
-(24053, 3978, 0, 'Ooze Covered Truesilver Deposit', 0, 10), -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
+(24053, 3990, 0, 'Ooze Covered Truesilver Deposit', 0, 10), -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
 (24054, 3979, 0, 'Ooze Covered Truesilver Deposit', 0, 10); -- Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein - Silithus
 REPLACE INTO `pool_pool` (`pool_id`, `mother_pool`, `chance`, `description`, `flags`) VALUES
-(3978, 1220, 0, 'Silithus - Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein', 0),
+(3990, 1220, 0, 'Silithus - Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein', 0),
 (3979, 1220, 0, 'Silithus - Ooze Covered Truesilver Deposit / Ooze Covered Rich Thorium Vein', 0);
 
 -- Missing Mithril Deposit spawns in Felwood.
