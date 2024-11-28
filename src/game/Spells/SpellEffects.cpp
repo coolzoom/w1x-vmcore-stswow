@@ -3144,6 +3144,9 @@ void Spell::EffectSummon(SpellEffectIndex effIdx)
         ((Creature*)m_casterUnit)->AI()->JustSummoned((Creature*)spawnCreature);
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(spawnCreature->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, spawnCreature);
 }
 
 void Spell::EffectLearnSpell(SpellEffectIndex effIdx)
@@ -3537,6 +3540,9 @@ void Spell::EffectSummonWild(SpellEffectIndex effIdx)
 
             if (count == 0)
                 AddExecuteLogInfo(effIdx, ExecuteLogInfo(summon->GetObjectGuid()));
+
+            if (m_spellScript)
+                m_spellScript->OnSummon(this, summon);
         }
     }
 }
@@ -3727,6 +3733,9 @@ void Spell::EffectSummonGuardian(SpellEffectIndex effIdx)
 
         if (count == 0)
             AddExecuteLogInfo(effIdx, ExecuteLogInfo(spawnCreature->GetObjectGuid()));
+
+        if (m_spellScript)
+            m_spellScript->OnSummon(this, spawnCreature);
     }
 }
 
@@ -3748,6 +3757,9 @@ void Spell::EffectSummonPossessed(SpellEffectIndex effIdx)
     // Notify Summoner
     if (m_originalCaster && m_originalCaster != m_caster && m_originalCaster->AI())
         m_originalCaster->AI()->JustSummoned(pMinion);
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, pMinion);
 }
 
 void Spell::EffectTeleUnitsFaceCaster(SpellEffectIndex effIdx)
@@ -4497,6 +4509,9 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex effIdx)
         ((GameObject*)m_caster)->AI()->JustSummoned(pGameObj);
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(pGameObj->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, pGameObj);
 }
 
 void Spell::EffectScriptEffect(SpellEffectIndex effIdx)
@@ -5932,6 +5947,9 @@ void Spell::EffectSummonTotem(SpellEffectIndex effIdx)
     pTotem->Summon(m_casterUnit);
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(pTotem->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, pTotem);
 }
 
 void Spell::EffectEnchantHeldItem(SpellEffectIndex effIdx)
@@ -6150,6 +6168,9 @@ void Spell::EffectSummonObject(SpellEffectIndex effIdx)
         ((Creature*)m_casterUnit)->AI()->JustSummoned(pGameObj);
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(pGameObj->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, pGameObj);
 }
 
 void Spell::EffectResurrect(SpellEffectIndex effIdx)
@@ -6416,6 +6437,9 @@ void Spell::EffectSummonCritter(SpellEffectIndex effIdx)
         ((Creature*)m_caster)->AI()->JustSummoned(critter);
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(critter->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, critter);
 }
 
 void Spell::EffectKnockBack(SpellEffectIndex effIdx)
@@ -6809,6 +6833,9 @@ void Spell::EffectSummonDemon(SpellEffectIndex effIdx)
     }
 
     AddExecuteLogInfo(effIdx, ExecuteLogInfo(pSummon->GetObjectGuid()));
+
+    if (m_spellScript)
+        m_spellScript->OnSummon(this, pSummon);
 }
 
 void Spell::EffectSpiritHeal(SpellEffectIndex /*effIdx*/)

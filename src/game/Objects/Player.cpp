@@ -3472,6 +3472,9 @@ void Player::GiveXP(uint32 xp, Unit const* victim)
         xp /= 2;
 #endif
 
+    if (GetPersonalXpRate() >= 0.0f)
+        xp *= GetPersonalXpRate();
+
     if (xp < 1)
         return;
 
@@ -6762,7 +6765,7 @@ void Player::CheckAreaExploreAndOutdoor()
             uint32 xp = 0;
             if (p->AreaLevel > 0 && GetLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
             {
-                float const explorationRate = GetPersonalXpRate() >= 0.0f ? GetPersonalXpRate() : sWorld.getConfig(CONFIG_FLOAT_RATE_XP_EXPLORE);
+                float const explorationRate = sWorld.getConfig(CONFIG_FLOAT_RATE_XP_EXPLORE);
                 int32 const diff = int32(GetLevel()) - p->AreaLevel;
                 if (diff < -5)
                     xp = uint32(sObjectMgr.GetBaseXP(GetLevel() + 5) * explorationRate);
@@ -7024,12 +7027,12 @@ void Player::RewardReputation(Quest const* pQuest)
         {
             int32 rep = CalculateReputationGain(REPUTATION_SOURCE_QUEST,  pQuest->RewRepValue[i], pQuest->RewRepFaction[i], GetQuestLevelForPlayer(pQuest));
 
+            bool noSpillover = (pQuest->GetRewRepSpilloverMask() & (1 << i)) != 0;
+
             if (FactionEntry const* factionEntry = sObjectMgr.GetFactionEntry(pQuest->RewRepFaction[i]))
-                GetReputationMgr().ModifyReputation(factionEntry, rep);
+                GetReputationMgr().ModifyReputation(factionEntry, rep, noSpillover);
         }
     }
-
-    // TODO: implement reputation spillover
 }
 
 uint32 Player::GetGuildIdFromDB(ObjectGuid guid)
@@ -13639,7 +13642,7 @@ void Player::RewardQuest(Quest const* pQuest, uint32 reward, WorldObject* questE
     q_status.m_reward_choice = pQuest->RewChoiceItemId[reward];
 
     // Used for client inform but rewarded only in case not max level
-    uint32 xp = uint32(pQuest->XPValue(this) * (GetPersonalXpRate() >= 0.0f ? GetPersonalXpRate() : sWorld.getConfig(CONFIG_FLOAT_RATE_XP_QUEST)));
+    uint32 xp = uint32(pQuest->XPValue(this) * sWorld.getConfig(CONFIG_FLOAT_RATE_XP_QUEST));
 
     if (GetLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         GiveXP(xp , nullptr);
@@ -15084,7 +15087,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     // 48                49     50      51      52      53      54      55      56              57               58       59
     //"watched_faction,  drunk, health, power1, power2, power3, power4, power5, explored_zones, equipment_cache, ammo_id, action_bars,"
     // 60                61           62
-    //"world_phase_mask, create_time, instance_id FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    //"world_phase_mask, create_time, instance FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
 
     std::unique_ptr<QueryResult> result = holder->TakeResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
@@ -16849,7 +16852,7 @@ void Player::SaveToDB(bool online, bool force)
     static SqlStatementID insChar;
 
     SqlStatement uberInsert = CharacterDatabase.CreateStatement(insChar, "REPLACE INTO `characters` (`guid`, `account`, `name`, `race`, `class`, `gender`, `level`, `xp`, `money`, `skin`, `face`, `hair_style`, `hair_color`, `facial_hair`, `bank_bag_slots`, `player_flags`,"
-                              "`map`, `instance_id`, `position_x`, `position_y`, `position_z`, `orientation`, "
+                              "`map`, `instance`, `position_x`, `position_y`, `position_z`, `orientation`, "
                               "`transport_guid`, `transport_x`, `transport_y`, `transport_z`, `transport_o`, "
                               "`known_taxi_mask`, `current_taxi_path`, `online`, `played_time_total`, `played_time_level`, "
                               "`rest_bonus`, `logout_time`, `is_logout_resting`, `reset_talents_multiplier`, `reset_talents_time`, "

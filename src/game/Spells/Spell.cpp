@@ -308,6 +308,14 @@ Spell::Spell(Unit* caster, SpellEntry const* info, bool triggered, ObjectGuid or
     m_channeledUpdateIterator = m_channeledHolders.end();
 
     CleanupTargetList();
+
+    if (info->ScriptId)
+    {
+        if (m_spellScript = sScriptMgr.GetSpellScript(info))
+        {
+            m_spellScript->OnInit(this);
+        }
+    }
 }
 
 Spell::Spell(GameObject* caster, SpellEntry const* info, bool triggered, ObjectGuid originalCasterGUID, SpellEntry const* triggeredBy, Unit* victim, SpellEntry const* triggeredByParent):
@@ -341,10 +349,19 @@ Spell::Spell(GameObject* caster, SpellEntry const* info, bool triggered, ObjectG
     m_channeledUpdateIterator = m_channeledHolders.end();
 
     CleanupTargetList();
+
+    if (info->ScriptId)
+    {
+        if (m_spellScript = sScriptMgr.GetSpellScript(info))
+        {
+            m_spellScript->OnInit(this);
+        }
+    }
 }
 
 Spell::~Spell()
 {
+    delete m_spellScript;
     m_destroyed = true;
 }
 
@@ -1241,6 +1258,10 @@ void Spell::AddGOTarget(GameObject* pTarget, SpellEffectIndex effIndex)
             return;
     }
 
+    if (m_spellScript)
+        if (!m_spellScript->OnCheckTarget(this, pTarget, effIndex))
+            return;
+
     ObjectGuid targetGUID = pTarget->GetObjectGuid();
 
     // Lookup target in already in list
@@ -1531,6 +1552,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         else
             procEx |= PROC_EX_NORMAL_HIT;
 
+        m_healing = addhealth; // update value so that script handler has access
+        if (m_spellScript)
+            m_spellScript->OnHit(this, missInfo);
+
         // Do triggers for unit (reflect triggers passed on hit phase for correct drop charge)
         if (m_canTrigger)
         {
@@ -1604,6 +1629,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         m_absorbed = damageInfo.absorb;
 
         pCaster->DealDamageMods(damageInfo.target, damageInfo.damage, &damageInfo.absorb);
+
+        m_damage = damageInfo.damage; // update value so that script handler has access
+        if (m_spellScript)
+            m_spellScript->OnHit(this, missInfo);
 
         // Send log damage message to client
         pCaster->SendSpellNonMeleeDamageLog(&damageInfo);
@@ -1681,6 +1710,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
     }
     else if (m_canTrigger && (procAttacker || procVictim))
     {
+        if (m_spellScript)
+            m_spellScript->OnHit(this, missInfo);
+
         // TODO: Allow all procs, and explicitly deny some rather than denying all and
         // explicitly allowing some
         bool foundDamageOrHealAura = false;
@@ -1758,6 +1790,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         
     if (missInfo != SPELL_MISS_NONE)
         return;
+
+    if (m_spellScript)
+        m_spellScript->OnAfterHit(this);
 
     // Call scripted function for AI if this spell is casted upon a creature
     if (unit->IsCreature())
@@ -2070,6 +2105,9 @@ void Spell::DoAllEffectOnTarget(GOTargetInfo *target)
         if (Player* p = m_casterUnit->GetCharmerOrOwnerPlayerOrPlayerItself())
             p->RewardPlayerAndGroupAtCast(go, m_spellInfo->Id);
     }
+
+    if (m_spellScript)
+        m_spellScript->OnHit(this, SPELL_MISS_NONE);
 }
 
 void Spell::DoAllEffectOnTarget(ItemTargetInfo *target)
@@ -2081,6 +2119,9 @@ void Spell::DoAllEffectOnTarget(ItemTargetInfo *target)
     for (int effectNumber = 0; effectNumber < MAX_EFFECT_INDEX; ++effectNumber)
         if (effectMask & (1 << effectNumber))
             HandleEffects(nullptr, target->item, nullptr, SpellEffectIndex(effectNumber));
+
+    if (m_spellScript)
+        m_spellScript->OnHit(this, SPELL_MISS_NONE);
 }
 
 void Spell::HandleDelayedSpellLaunch(TargetInfo *target)
@@ -2369,7 +2410,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             break;
     }
 
-    bool SelectClosestTargets = false;
+    if (m_spellScript)
+        m_spellScript->OnSetTargetMap(this, effIndex, targetMode, radius, unMaxTargets);
+
+    bool selectClosestTargets = false;
 
     // custom selection cases
     switch (m_spellInfo->SpellFamilyName)
@@ -2380,7 +2424,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             {
                 case 26052:                                 // Poison Bolt Volley (AQ40, Princess Huhuran)
                 case 29213:                                 // Curse of the Plaguebringer (Naxxramas, Noth the Plaguebringer)
-                    SelectClosestTargets = true;
+                    selectClosestTargets = true;
                     break;
             }
             break;
@@ -2390,7 +2434,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             switch (m_spellInfo->Id)
             {
                 case 26180:                                 // Wyvern Sting (AQ40, Princess Huhuran)
-                    SelectClosestTargets = true;
+                    selectClosestTargets = true;
                     break;
             }
             break;
@@ -2662,7 +2706,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                         targetUnitMap.erase(itr);
                 }
             }
-            if (SelectClosestTargets && unMaxTargets && targetUnitMap.size() > unMaxTargets)
+            if (selectClosestTargets && unMaxTargets && targetUnitMap.size() > unMaxTargets)
             {
                 targetUnitMap.sort(TargetDistanceOrderNear(m_caster));
                 UnitList::iterator itr = targetUnitMap.begin();
@@ -3777,6 +3821,9 @@ SpellCastResult Spell::prepare(Aura* triggeredByAura, uint32 chance)
         if (!m_IsTriggeredSpell || channeled)
             m_caster->SetCurrentCastedSpell(this);
 
+        if (m_spellScript)
+            m_spellScript->OnSuccessfulStart(this);
+
         if (!m_IsTriggeredSpell)
         {
             // will show cast bar
@@ -4096,6 +4143,9 @@ void Spell::cast(bool skipCheck)
 
     SendCastResult(castResult);
     InitializeDamageMultipliers();
+
+    if (m_spellScript)
+        m_spellScript->OnCast(this);
 
     // Trigger procs on cast end for caster.
     if (m_canTrigger && m_casterUnit && !m_spellInfo->HasAttribute(SPELL_ATTR_EX3_SUPPRESS_CASTER_PROCS))
@@ -4817,6 +4867,8 @@ void Spell::finish(bool ok)
         }
     }
     
+    if (m_spellScript)
+        m_spellScript->OnSuccessfulFinish(this);
 }
 
 void Spell::SendCastResult(SpellCastResult result)
@@ -5726,7 +5778,11 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item *pItemTarget, GameObject* pGOT
                      gameObjTarget ? gameObjTarget->GetGuidStr().c_str() : "-");
 
     if (eff < TOTAL_SPELL_EFFECTS)
+    {
+        if (m_spellScript)
+            m_spellScript->OnEffectExecute(this, i);
         (*this.*SpellEffects[eff])(i);
+    }
     else
         sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "WORLD: Spell %u has effect %d at index %u > TOTAL_SPELL_EFFECTS",
             m_spellInfo->Id, eff, i);
@@ -7149,6 +7205,9 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
     }
 
+    if (m_spellScript)
+        return m_spellScript->OnCheckCast(this, strict);
+
     // all ok
     return SPELL_CAST_OK;
 }
@@ -8298,8 +8357,14 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
         target->IsCreature() && static_cast<Creature*>(target)->IsImmuneToAoe())
         return false;
 
-    return !(target->GetTypeId() != TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR_EX3_ONLY_ON_PLAYER)
-            && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_UNIT_SCRIPT_NEAR_CASTER && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_UNIT_CASTER);
+    if (target->GetTypeId() != TYPEID_PLAYER && m_spellInfo->HasAttribute(SPELL_ATTR_EX3_ONLY_ON_PLAYER)
+        && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_UNIT_SCRIPT_NEAR_CASTER && m_spellInfo->EffectImplicitTargetA[eff] != TARGET_UNIT_CASTER)
+        return false;
+
+    if (m_spellScript)
+        return m_spellScript->OnCheckTarget(this, target, eff);
+
+    return true;
 }
 
 bool Spell::IsNeedSendToClient() const

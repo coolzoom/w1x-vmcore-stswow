@@ -24,7 +24,7 @@
 #include "Policies/Singleton.h"
 #include "DBCEnums.h"
 #include "ScriptCommands.h"
-
+#include "SpellDefines.h"
 #include <atomic>
 
 struct AreaTriggerEntry;
@@ -43,6 +43,7 @@ class Map;
 class Quest;
 class SpellCastTargets;
 class SpellEntry;
+class Spell;
 
 typedef std::multimap<uint32, ScriptInfo> ScriptMap;
 typedef std::map<uint32, ScriptMap > ScriptMapMap;
@@ -127,6 +128,38 @@ struct CreatureEscortData
     uint32 uiLastWaypointEntry;
 };
 
+struct SpellScript
+{
+    virtual ~SpellScript() = default;
+
+    // called on spell init
+    virtual void OnInit(Spell* /*spell*/) const {}
+    // called on success during Spell::Prepare
+    virtual void OnSuccessfulStart(Spell* /*spell*/) const {}
+    // called on success inside Spell::finish - for channels this only happens if whole channel went through
+    virtual void OnSuccessfulFinish(Spell* /*spell*/) const {}
+    // called at end of Spell::CheckCast - strict is true in Spell::Prepare
+    virtual SpellCastResult OnCheckCast(Spell* /*spell*/, bool /*strict*/) const { return SPELL_CAST_OK; }
+    // called before effect execution
+    virtual void OnEffectExecute(Spell* /*spell*/, SpellEffectIndex /*effIdx*/) const {}
+    // called in targeting to determine radius for spell
+    virtual void OnSetTargetMap(Spell* /*spell*/, SpellEffectIndex /*effIdx*/, uint32& /*targetMode*/, float& /*radius*/, uint32& /*unMaxTargets*/) const {}
+    // called on Unit Spell::CheckTarget
+    virtual bool OnCheckTarget(const Spell* /*spell*/, GameObject* /*target*/, SpellEffectIndex /*eff*/) const { return true; }
+    // called on GO Spell::AddGOTarget
+    virtual bool OnCheckTarget(const Spell* /*spell*/, Unit* /*target*/, SpellEffectIndex /*eff*/) const { return true; }
+    // called in Spell::cast on all successful checks and after taking reagents
+    virtual void OnCast(Spell* /*spell*/) const {}
+    // called in Spell::DoAllEffectOnTarget, for Unit case right before damage/heal is dealt and procs happen
+    virtual void OnHit(Spell* /*spell*/, SpellMissInfo /*missInfo*/) const {}
+    // called in Spell::DoAllEffectOnTarget for Unit targets only, after damage/heal is dealt and procs have happened
+    virtual void OnAfterHit(Spell* /*spell*/) const {}
+    // called after summoning a creature
+    virtual void OnSummon(Spell* /*spell*/, Creature* /*summon*/) const {}
+    // called after summoning a gameobject
+    virtual void OnSummon(Spell* /*spell*/, GameObject* /*summon*/) const {}
+};
+
 struct Script
 {
     Script() :
@@ -168,10 +201,11 @@ struct Script
     bool (*pEffectDummyGameObj      )(WorldObject*, uint32, SpellEffectIndex, GameObject*);
     bool (*pEffectAuraDummy         )(Aura const*, bool);
     bool (*GOOpen                   )(Player* pUser, GameObject* gobj);
-    GameObjectAI* (*GOGetAI         )(GameObject* pGo);
 
+    GameObjectAI* (*GOGetAI         )(GameObject* pGo);
     CreatureAI* (*GetAI)(Creature*);
     InstanceData* (*GetInstanceData)(Map*);
+    SpellScript* (*GetSpellScript)(SpellEntry const*);
 
     void RegisterSelf(bool reportUnused = true);
 };
@@ -265,6 +299,7 @@ class ScriptMgr
         CreatureAI* GetCreatureAI(Creature* pCreature);
         GameObjectAI* GetGameObjectAI(GameObject* pGob);
         InstanceData* CreateInstanceData(Map* pMap);
+        SpellScript* GetSpellScript(SpellEntry const* pSpell);
 
         bool OnGossipHello(Player* pPlayer, Creature* pCreature);
         bool OnGossipHello(Player* pPlayer, GameObject* pGameObject);

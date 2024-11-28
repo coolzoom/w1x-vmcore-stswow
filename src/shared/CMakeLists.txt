@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 # Glob only and not recurse, there are other libs for that
-set (shared_SRCS 
+set (shared_SRCS
     ByteBuffer.h
     Common.h
     DelayExecutor.h
@@ -43,8 +43,6 @@ set (shared_SRCS
     Crypto/Authentication/SRP6.cpp
     Crypto/Encryption/RC4.h
     Crypto/Encryption/RC4.cpp
-    Crypto/Hash/Hmac.h
-    Crypto/Hash/Hmac.cpp
     Crypto/Hash/HMACSHA1.h
     Crypto/Hash/HMACSHA1.cpp
     Crypto/Hash/MD5.h
@@ -104,8 +102,8 @@ set (shared_SRCS
     TimePeriod.cpp
 )
 
-if(USE_LIBCURL)
-  set (shared_SRCS 
+if (ENABLE_MAILSENDER)
+  set (shared_SRCS
     ${shared_SRCS}
     SendgridMail.h
     MailerService.h
@@ -122,14 +120,14 @@ if(WIN32)
     revision.h
     migrations_list.h
   )
-  
+
   if (NOT MSVC)
     list(REMOVE_ITEM shared_SRCS
       WheatyExceptionReport.cpp
       WheatyExceptionReport.h
     )
   endif()
-  
+
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D__ACE_INLINE__")
 else()
   list(REMOVE_ITEM shared_SRCS
@@ -164,7 +162,11 @@ source_group("Log"
   REGULAR_EXPRESSION Log
 )
 
-include_directories(
+add_library(shared STATIC
+  ${shared_SRCS}
+)
+
+target_include_directories(shared PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/dep/include
   ${CMAKE_SOURCE_DIR}/src/framework
@@ -175,22 +177,31 @@ include_directories(
 )
 
 if(WIN32)
-  include_directories(
+  target_include_directories(shared PUBLIC
     ${CMAKE_SOURCE_DIR}/dep/windows/include
   )
 endif()
 
-add_library(shared STATIC
-  ${shared_SRCS}
-)
+if (REQUIRES_LIBCURL)
+  if(WIN32)
+    target_include_directories(shared PUBLIC
+      ${CURL_INCLUDE_DIR}
+    )
+    target_link_libraries(shared PUBLIC
+      ${CURL_LIBRARY}
+    )
+  else()
+    target_link_libraries(shared PUBLIC curl)
+  endif()
+endif()
 
 if(UNIX)
   find_package(Threads)
-  target_link_libraries(shared ${ACE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(shared PUBLIC ${ACE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 endif(UNIX)
 
 if(MINGW)
-  target_link_libraries(shared ${ACE_LIBRARIES} -lws2_32)
+  target_link_libraries(shared PUBLIC ${ACE_LIBRARIES} -lws2_32)
 endif()
 
 SET_TARGET_PROPERTIES (shared PROPERTIES FOLDER "Game Libs")

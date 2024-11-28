@@ -221,7 +221,7 @@ bool QuestAccept_npc_shay_leafrunner(Player* pPlayer, Creature* pCreature, Quest
         DoScriptText(SAY_ESCORT_START, pCreature);
         pCreature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_NPC);
         if (npc_shay_leafrunnerAI* leafrunnerAI = dynamic_cast<npc_shay_leafrunnerAI*>(pCreature->AI()))
-            leafrunnerAI->BeforeStartFollow(pPlayer, pPlayer->GetFactionTemplateId(), pQuest);
+            leafrunnerAI->BeforeStartFollow(pPlayer, FACTION_ESCORT_A_NEUTRAL_PASSIVE, pQuest);
     }
     return true;
 }

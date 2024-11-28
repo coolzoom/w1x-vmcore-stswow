@@ -24,7 +24,7 @@
 */
 
 #include "Common.h"
-#include "Crypto/Hash/Hmac.h"
+#include "Crypto/Hash/HMACSHA1.h"
 #include "Auth/base32.h"
 #include "Database/DatabaseEnv.h"
 #include "Config/Config.h"
@@ -35,7 +35,7 @@
 #include "PatchHandler.h"
 #include "Util.h"
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
 #include "MailerService.h"
 #include "SendgridMail.h"
 #endif
@@ -722,7 +722,7 @@ bool AuthSocket::_HandleLogonProof()
                 return true;
             }
 
-#ifdef USE_SENDGRID
+#ifdef ENABLE_MAILSENDER
             if (sConfig.GetBoolDefault("SendMail", false))
             {
                 auto mail = std::make_unique<SendgridMail>
@@ -1275,9 +1275,8 @@ uint32 AuthSocket::GenerateTotpPin(const std::string& secret, int interval) {
     uint64 step = static_cast<uint64>((floor(now / 30))) + interval;
     EndianConvertReverse(step);
 
-    HmacHash hmac(decoded_key.data(), key_size);
+    Crypto::Hash::HMACSHA1::Generator hmac(decoded_key.data(), key_size);
     hmac.UpdateData((uint8*)&step, sizeof(step));
-    hmac.Finalize();
 
     auto hmac_result = hmac.GetDigest();
 

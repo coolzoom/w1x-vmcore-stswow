@@ -5348,8 +5348,8 @@ void ObjectMgr::LoadQuests()
                           "`IncompleteEmote`, `CompleteEmote`, `OfferRewardEmote1`, `OfferRewardEmote2`, `OfferRewardEmote3`, `OfferRewardEmote4`,"
     //                      119                       120                       121                       122
                           "`OfferRewardEmoteDelay1`, `OfferRewardEmoteDelay2`, `OfferRewardEmoteDelay3`, `OfferRewardEmoteDelay4`,"
-    //                      123            124               125         126             127      128                  129
-                          "`StartScript`, `CompleteScript`, `MaxLevel`, `RewMailMoney`, `RewXP`, `RequiredCondition`, `BreadcrumbForQuestId` "
+    //                      123            124               125         126             127      128                  129                     130
+                          "`StartScript`, `CompleteScript`, `MaxLevel`, `RewMailMoney`, `RewXP`, `RequiredCondition`, `BreadcrumbForQuestId`, `RewRepSpilloverMask`"
                           " FROM `quest_template` t1 WHERE `patch`=(SELECT max(`patch`) FROM `quest_template` t2 WHERE t1.`entry`=t2.`entry` && `patch` <= %u)", sWorld.GetWowPatch()));
     if (!result)
     {
@@ -5821,11 +5821,20 @@ void ObjectMgr::LoadQuests()
                     qinfo->RewRepFaction[j] = 0;            // quest will not reward this
                 }
             }
-            else if (qinfo->RewRepValue[j] != 0)
+            else
             {
-                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Quest %u has `RewRepFaction%d` = 0 but `RewRepValue%d` = %i.",
-                                qinfo->GetQuestId(), j + 1, j + 1, qinfo->RewRepValue[j]);
-                // no changes, quest ignore this data
+                if (qinfo->RewRepSpilloverMask & (1 << j))
+                {
+                    sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Quest %u has `RewRepFaction%d` = 0 but `RewRepSpilloverMask` is set for this index.",
+                        qinfo->GetQuestId(), j + 1);
+                    // no changes, quest ignore this data
+                }
+                if (qinfo->RewRepValue[j] != 0)
+                {
+                    sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "Quest %u has `RewRepFaction%d` = 0 but `RewRepValue%d` = %i.",
+                        qinfo->GetQuestId(), j + 1, j + 1, qinfo->RewRepValue[j]);
+                    // no changes, quest ignore this data
+                }
             }
         }
 
@@ -8175,8 +8184,8 @@ void ObjectMgr::LoadCorpses()
     uint32 count = 0;
     //                                                                            0       1                       2                      3                      4                      5                       6
     std::unique_ptr<QueryResult> result(CharacterDatabase.Query("SELECT `corpse`.`guid`, `player_guid`, `corpse`.`position_x`, `corpse`.`position_y`, `corpse`.`position_z`, `corpse`.`orientation`, `corpse`.`map`, "
-    //                      7       8              9           10        11      12       13      14      15            16            17             18                 19          20
-                          "`time`, `corpse_type`, `instance`, `gender`, `race`, `class`, `skin`, `face`, `hair_style`, `hair_color`, `facial_hair`, `equipment_cache`, `guild_id`, `player_flags` FROM `corpse` "
+    //                      7       8                       9           10        11      12       13      14      15            16            17             18                 19          20
+                          "`time`, `corpse_type`, `corpse`.`instance`, `gender`, `race`, `class`, `skin`, `face`, `hair_style`, `hair_color`, `facial_hair`, `equipment_cache`, `guild_id`, `player_flags` FROM `corpse` "
                           "JOIN `characters` ON `player_guid` = `characters`.`guid` "
                           "LEFT JOIN `guild_member` ON `player_guid`=`guild_member`.`guid` WHERE `corpse_type` <> 0"));
 

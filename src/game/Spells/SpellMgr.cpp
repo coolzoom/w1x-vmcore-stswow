@@ -3785,6 +3785,7 @@ void SpellMgr::LoadSpells()
         //spell->MinReputation = fields[147].GetUInt32();
         //spell->RequiredAuraVision = fields[148].GetUInt32();
         spell->Custom = fields[149].GetUInt32();
+        spell->ScriptId = sScriptMgr.GetScriptId(fields[150].GetString());
 
         // It seems that in vanilla when the Amplitude of a
         // periodic aura was 0, it defaulted to a 5 seconds timer.
