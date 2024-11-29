@@ -7467,17 +7467,17 @@ void SpellAuraHolder::HandleCastOnAuraRemoval() const
 
     switch (GetId())
     {
-        case 26180:
+        case 26180:                              // Wyvern Sting (AQ40, Princess Huhuran)
         {
             if (mode == AURA_REMOVE_BY_DISPEL)
-                uiTriggeredSpell = 26233;        // Wyvern Sting (AQ40, Princess Huhuran)
+                uiTriggeredSpell = 26233;
             break;
         }
-        case 24002:
+        case 24002:                              // Tranquilizing Poison (ZG, Razzashi Serpent)
         case 24003:
         {
             if (mode == AURA_REMOVE_BY_EXPIRE)
-                uiTriggeredSpell = 24004;        // Tranquilizing Poison (ZG, Razzashi Serpent)
+                GetTarget()->CastSpell(GetTarget(), 24004, true);
             break;
         }
         default:
