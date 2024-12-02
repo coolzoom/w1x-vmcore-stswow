@@ -1054,13 +1054,15 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt)
             if (!ok_build || (i->second.allowedSecurityLevel > GetSecurityOn(i->second.id)))
                 realmflags = RealmFlags(realmflags | REALM_FLAG_OFFLINE);
 
+            uint8 const categoryId = GetRealmCategoryIdByBuildAndZone(m_build, RealmZone(i->second.timeZone));
+
             pkt << uint32(i->second.icon);              // realm type
             pkt << uint8(realmflags);                   // realmflags
             pkt << name;                                // name
             pkt << GetRealmAddress(i->second);          // address
             pkt << float(i->second.populationLevel);
             pkt << uint8(AmountOfCharacters);
-            pkt << uint8(i->second.timeZone);           // realm category
+            pkt << uint8(categoryId);                   // realm category
             pkt << uint8(0x00);                         // unk, may be realm number/id?
         }
 
@@ -1102,6 +1104,8 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt)
             if (!buildInfo)
                 realmFlags = RealmFlags(realmFlags & ~REALM_FLAG_SPECIFYBUILD);
 
+            uint8 const categoryId = GetRealmCategoryIdByBuildAndZone(m_build, RealmZone(i->second.timeZone));
+
             pkt << uint8(i->second.icon);               // realm type (this is second column in Cfg_Configs.dbc)
             pkt << uint8(lock);                         // flags, if 0x01, then realm locked
             pkt << uint8(realmFlags);                   // see enum RealmFlags
@@ -1109,7 +1113,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt)
             pkt << GetRealmAddress(i->second);          // address
             pkt << float(i->second.populationLevel);
             pkt << uint8(AmountOfCharacters);
-            pkt << uint8(i->second.timeZone);           // realm category (Cfg_Categories.dbc)
+            pkt << uint8(categoryId);                   // realm category (Cfg_Categories.dbc)
             pkt << uint8(0x2C);                         // unk, may be realm number/id?
 
             if (realmFlags & REALM_FLAG_SPECIFYBUILD)

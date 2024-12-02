@@ -27,6 +27,7 @@ set (shared_SRCS
     PosixDaemon.h
     ProgressBar.h
     Progression.h
+    RealmZone.h
     revision.h
     ServiceWin32.h
     SystemConfig.h
