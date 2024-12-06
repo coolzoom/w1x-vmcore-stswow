@@ -418,8 +418,14 @@ bool LootStoreItem::AllowedForTeam(Loot const& loot) const
 
         // Team check
         Team conditionTeam = condition->GetTeam();
-        if ((conditionTeam == ALLIANCE || conditionTeam == HORDE) && conditionTeam != loot.GetTeam())
-            return false;
+        if (conditionTeam == ALLIANCE || conditionTeam == HORDE)
+        {
+            if (TEAM_CROSSFACTION == loot.GetTeam())
+                return true;
+
+            if (conditionTeam != loot.GetTeam())
+                return false;
+        }
 
         // Check non-player dependant conditions
         if (ConditionEntry::CanBeUsedWithoutPlayer(conditionId))

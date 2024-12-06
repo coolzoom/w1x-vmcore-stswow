@@ -2600,13 +2600,13 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const* spell
 
             BattleGround* bg = player->GetBattleGround();
 
-            return player->GetMapId() == 30 && bg
+            return player->GetMapId() == MAP_ALTERAC_VALLEY && bg
                    && bg->GetStatus() != STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         }
         // Warsong Gulch
         case 23333:                                         // Warsong Flag
         case 23335:                                         // Silverwing Flag
-            return player && player->GetMapId() == 489 && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
+            return player && player->GetMapId() == MAP_WARSONG_GULCH && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_REQUIRES_AREA;
         case 2584:                                          // Waiting to Resurrect
         {
             return player && player->InBattleGround() ? SPELL_CAST_OK : SPELL_FAILED_ONLY_BATTLEGROUNDS;

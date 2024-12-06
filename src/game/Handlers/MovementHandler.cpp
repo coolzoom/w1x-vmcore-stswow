@@ -98,7 +98,7 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     // relocate the player to the teleport destination
     if (!map)
     {
-        if (loc.mapId <= 1)
+        if (loc.mapId <= MAX_CONTINENT_ID)
             GetPlayer()->SetLocationInstanceId(sMapMgr.GetContinentInstanceId(loc.mapId, loc.x, loc.y));
         map = sMapMgr.CreateMap(loc.mapId, GetPlayer());
     }
@@ -1159,7 +1159,7 @@ void WorldSession::HandleMoverRelocation(Unit* pMover, MovementInfo& movementInf
             // Undermap
             if ((pPlayerMover->GetPositionZ() + 100.0f) < hauteur)
                 undermap = true;
-            if (pPlayerMover->GetPositionZ() < 250.0f && pPlayerMover->GetMapId() == 489)
+            if (pPlayerMover->GetPositionZ() < 250.0f && pPlayerMover->GetMapId() == MAP_WARSONG_GULCH)
                 undermap = true;
 
             if (undermap)

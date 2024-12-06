@@ -95,7 +95,7 @@ struct MapEntry
     bool Instanceable() const { return mapType == MAP_INSTANCE || mapType == MAP_RAID || mapType == MAP_BATTLEGROUND; }
     bool IsRaid() const { return mapType == MAP_RAID; }
     bool IsBattleGround() const { return mapType == MAP_BATTLEGROUND; }
-    bool IsMountAllowed() const { return !IsDungeon() || id == 309 || id == 209 || id == 509 || id == 269; }
+    bool IsMountAllowed() const { return !IsDungeon() || id == MAP_ZUL_GURUB || id == MAP_ZUL_FARRAK || id == MAP_AHN_QIRAJ_RUINS || id == MAP_CAVERNS_OF_TIME; }
     bool IsContinent() const { return id == 0 || id == 1; }
 };
 

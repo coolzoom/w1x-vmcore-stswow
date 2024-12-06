@@ -619,8 +619,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         AreaTriggerTeleport const* at = sObjectMgr.GetGoBackTrigger(pCurrChar->GetMapId());
         if (at)
             pCurrChar->TeleportTo(at->destination);
-        else if (pCurrChar->GetMapId() == 533)
-            pCurrChar->TeleportTo(0, 3362.15f, -3379.35f, 144.782f, 6.28319f); // Naxxramas has no exit trigger
+        else if (pCurrChar->GetMapId() == MAP_NAXXRAMAS)
+            pCurrChar->TeleportTo(MAP_EASTERN_KINGDOMS, 3362.15f, -3379.35f, 144.782f, 6.28319f); // Naxxramas has no exit trigger
         else
             pCurrChar->TeleportToHomebind();
 

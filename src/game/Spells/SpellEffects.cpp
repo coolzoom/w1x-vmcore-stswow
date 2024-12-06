@@ -1401,7 +1401,7 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                         else
                         {
                             if (Player* pPlayer = m_casterUnit->GetMap()->GetPlayer(playerGUID))
-                                pPlayer->TeleportTo(1, -7341.38f, -3908.11f, 150.7f, 0.51f);
+                                pPlayer->TeleportTo(MAP_KALIMDOR, -7341.38f, -3908.11f, 150.7f, 0.51f);
                         }
                     }
                     return;
@@ -4485,7 +4485,7 @@ void Spell::EffectSummonObjectWild(SpellEffectIndex effIdx)
 
         switch (pGameObj->GetMapId())
         {
-            case 489:                                       //WS
+            case MAP_WARSONG_GULCH: //WS
             {
                 if (bg && bg->GetTypeID() == BATTLEGROUND_WS && bg->GetStatus() == STATUS_IN_PROGRESS)
                 {

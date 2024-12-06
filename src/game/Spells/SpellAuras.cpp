@@ -1548,7 +1548,7 @@ void Aura::TriggerSpell()
             case 28084:
             {
                 // Lets only process the following when in naxx, otherwise it can become expensive as hell
-                if (triggerTarget->GetMap()->GetId() != 533)
+                if (triggerTarget->GetMap()->GetId() != MAP_NAXXRAMAS)
                     break;
                 Unit* caster = GetCaster();
 
@@ -1581,7 +1581,7 @@ void Aura::TriggerSpell()
             case 28059:
             {
                 // Lets only process the following when in naxx, otherwise it can become expensive as hell
-                if (triggerTarget->GetMap()->GetId() != 533)
+                if (triggerTarget->GetMap()->GetId() != MAP_NAXXRAMAS)
                     break;
                 Unit* caster = GetCaster();
 

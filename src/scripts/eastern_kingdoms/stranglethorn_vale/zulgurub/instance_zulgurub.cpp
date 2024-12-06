@@ -178,7 +178,7 @@ void instance_zulgurub::SetData(uint32 uiType, uint32 uiData)
                 {
                     if (Creature* MarliTrash = instance->GetCreature(guid))
                         if (MarliTrash->IsAlive() && !MarliTrash->IsInCombat())
-                            if (MarliTrash->GetMapId() == 309 && MarliTrash->GetZoneId() == 1977 && MarliTrash->GetAreaId() == 3379)
+                            if (MarliTrash->GetMapId() == MAP_ZUL_GURUB && MarliTrash->GetZoneId() == 1977 && MarliTrash->GetAreaId() == 3379)
                                 MarliTrash->AI()->AttackStart(pVictim);
                 }
             }

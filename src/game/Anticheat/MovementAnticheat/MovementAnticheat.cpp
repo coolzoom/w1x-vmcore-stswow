@@ -1185,7 +1185,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
 
     switch(me->GetMapId())
     {
-        case 30: // Alterac Valley
+        case MAP_ALTERAC_VALLEY: // Alterac Valley
         {
             if (BattleGround* bg = me->GetBattleGround())
             {
@@ -1200,7 +1200,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
             }
             break;
         }
-        case 489: // Warsong Gulch
+        case MAP_WARSONG_GULCH: // Warsong Gulch
         {
             // Only way to get this high is with engineering items malfunction.
             if (!(movementInfo.moveFlags & (MOVEFLAG_FALLINGFAR | MOVEFLAG_JUMPING)) && movementInfo.pos.z > 380.0f)
@@ -1219,7 +1219,7 @@ bool MovementAnticheat::CheckForbiddenArea(MovementInfo const& movementInfo) con
             }
             break;
         }
-        case 529: // Arathi Basin
+        case MAP_ARATHI_BASIN: // Arathi Basin
         {
             if (BattleGround* bg = me->GetBattleGround())
             {

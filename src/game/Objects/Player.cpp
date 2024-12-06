@@ -841,7 +841,7 @@ bool Player::Create(uint32 guidlow, std::string const& name, uint8 race, uint8 c
     SetLocationMapId(info->mapId);
     Relocate(info->positionX, info->positionY, info->positionZ, info->orientation);
 
-    if (GetMapId() <= 1)
+    if (GetMapId() <= MAX_CONTINENT_ID)
         SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
     SetMap(sMapMgr.CreateMap(info->mapId, this));
 
@@ -2390,7 +2390,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         uint32 instanceId = 0;
         if (state)
             instanceId = state->GetInstanceId();
-        if (mapid <= 1)
+        if (mapid <= MAX_CONTINENT_ID)
             instanceId = sMapMgr.GetContinentInstanceId(mapid, x, y);
         Map* map = sMapMgr.FindMap(mapid, instanceId);
         if (map && !map->CanEnter(this))
@@ -2423,7 +2423,7 @@ bool Player::ExecuteTeleportFar(ScheduledTeleportData* data)
     uint32 instanceId = 0;
     if (state)
         instanceId = state->GetInstanceId();
-    if (mapid <= 1)
+    if (mapid <= MAX_CONTINENT_ID)
         instanceId = sMapMgr.GetContinentInstanceId(mapid, data->x, data->y);
     Map* map = sMapMgr.FindMap(mapid, instanceId);
     if (!map || map->CanEnter(this))
@@ -15279,7 +15279,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
     }
 
     // load the player's map here if it's not already loaded
-    if (GetMapId() <= 1)
+    if (GetMapId() <= MAX_CONTINENT_ID)
         SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
     SetMap(sMapMgr.CreateMap(GetMapId(), this));
 
@@ -15305,7 +15305,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
                 m_movementInfo.ClearTransportData();
 
                 RelocateToHomebind();
-                if (GetMapId() <= 1)
+                if (GetMapId() <= MAX_CONTINENT_ID)
                     SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
                 SetMap(sMapMgr.CreateMap(GetMapId(), this));
             }
@@ -15313,7 +15313,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
             {
                 if (transport->GetMap() != this->GetMap())
                 {
-                    if (transport->GetMapId() <= 1)
+                    if (transport->GetMapId() <= MAX_CONTINENT_ID)
                         SetLocationInstanceId(sMapMgr.GetContinentInstanceId(transport->GetMapId(), transport->GetPositionX(), transport->GetPositionY()));
                     SetMap(transport->GetMap());
                 }
@@ -15328,7 +15328,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
                           guid.GetString().c_str(), transGUID);
 
             RelocateToHomebind();
-            if (GetMapId() <= 1)
+            if (GetMapId() <= MAX_CONTINENT_ID)
                 SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
             SetMap(sMapMgr.CreateMap(GetMapId(), this));
         }
@@ -15352,17 +15352,17 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
             {
                 Relocate(at->destination.x, at->destination.y, at->destination.z, at->destination.o);
                 SetLocationMapId(at->destination.mapId);
-                if (GetMapId() <= 1)
+                if (GetMapId() <= MAX_CONTINENT_ID)
                     SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
                 SetMap(sMapMgr.CreateMap(GetMapId(), this));
             }
-            else if (GetMapId() == 533) // Naxxramas
+            else if (GetMapId() == MAP_NAXXRAMAS) // Naxxramas
             {
                 // There is no exit areatrigger for Naxx, but exit destination for
                 // all dungeons is stored in WorldSafeLocs.db2 in 1.13 classic client.
                 Relocate(3362.15f, -3379.35f, 144.782f, 6.28319f);
-                SetLocationMapId(0);
-                if (GetMapId() <= 1)
+                SetLocationMapId(MAP_EASTERN_KINGDOMS);
+                if (GetMapId() <= MAX_CONTINENT_ID)
                     SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
                 SetMap(sMapMgr.CreateMap(GetMapId(), this));
             }
@@ -15519,7 +15519,7 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
 
         //we can be relocated from taxi and still have an outdated Map pointer!
         //so we need to get a new Map pointer!
-        if (GetMapId() <= 1)
+        if (GetMapId() <= MAX_CONTINENT_ID)
             SetLocationInstanceId(sMapMgr.GetContinentInstanceId(GetMapId(), GetPositionX(), GetPositionY()));
         SetMap(sMapMgr.CreateMap(GetMapId(), this));
         SaveRecallPosition();                           // save as recall also to prevent recall and fall from sky
