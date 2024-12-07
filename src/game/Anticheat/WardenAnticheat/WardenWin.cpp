@@ -85,6 +85,17 @@ static constexpr struct ClientOffsets
     uint32 ClickToMovePosition;
 } Offsets[] = {
     {
+        5086,
+        0x2E82E0,
+        0x225FB0, 0x227070, 0x226CE0, 0x232170,
+        0x22580,
+        0xC01BBC,
+        0xC74844,
+        0xB95818, 0x38A0, 0x0, 0xA8,
+        0xC6EBF4, 0x228, 0x08,
+        0xBD4260
+    },
+    {
         5302,
         0x2F5CE0,
         0x22D230, 0x22E2F0, 0x22DF60, 0x2393F0,
