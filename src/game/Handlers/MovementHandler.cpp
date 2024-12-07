@@ -1170,7 +1170,7 @@ void WorldSession::HandleMoverRelocation(Unit* pMover, MovementInfo& movementInf
             pPlayerMover->SaveNoUndermapPosition(pMover->m_movementInfo.GetPos().x, pMover->m_movementInfo.GetPos().y, pMover->m_movementInfo.GetPos().z + 3.0f, pMover->m_movementInfo.GetPos().o);
         
         // Antiundermap2: teleport to graveyard
-        if (pMover->m_movementInfo.GetPos().z < -500.0f)
+        if (pMover->m_movementInfo.GetPos().z < -500.0f && !pPlayerMover->IsGameMaster())
         {
             // NOTE: this is actually called many times while falling
             // even after the player has been teleported away
