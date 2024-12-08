@@ -37,6 +37,8 @@
 
 #include <memory>
 
+
+struct SpellScript;
 class WorldSession;
 class WorldPacket;
 class DynamicObj;
