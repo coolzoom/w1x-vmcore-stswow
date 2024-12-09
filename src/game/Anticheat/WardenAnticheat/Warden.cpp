@@ -619,15 +619,22 @@ void Warden::HandlePacket(WorldPacket& recvData)
             if (!!m_crk)
                 return;
 
-            // at this point the client has our module loaded.  send whatever packets are necessary to initialize Warden
-            InitializeClient();
+            // in versions before 1.8, the client does not call the module's tick function
+            // this means the client can never respond to any scans, and will time out
+            // it's unlcear if they used different modules that don't require a tick
+            // or if warden was just unfinished and not actually used before 1.8
+            if (m_clientBuild > CLIENT_BUILD_1_7_1)
+            {
+                // at this point the client has our module loaded.  send whatever packets are necessary to initialize Warden
+                InitializeClient();
 
-            // send any initial hack scans that the scan manager may have for us
-            RequestScans(SelectScans(ScanFlags::InitialLogin));
+                // send any initial hack scans that the scan manager may have for us
+                RequestScans(SelectScans(ScanFlags::InitialLogin));
 
-            // begin the scan clock (note that even if the clock expires before any initial scans are answered, no new
-            // checks will be requested until the reply is received).
-            BeginScanClock();
+                // begin the scan clock (note that even if the clock expires before any initial scans are answered, no new
+                // checks will be requested until the reply is received).
+                BeginScanClock();
+            }
 
             break;
         }
