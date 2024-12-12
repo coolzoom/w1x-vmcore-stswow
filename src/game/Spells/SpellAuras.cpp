@@ -4237,6 +4237,7 @@ void Aura::HandleAuraModDecreaseSpeed(bool apply, bool Real)
     Unit* target = GetTarget();
 
     target->UpdateSpeed(MOVE_RUN, false);
+    target->UpdateSpeed(MOVE_RUN_BACK, false);
     target->UpdateSpeed(MOVE_SWIM, false);
 }
 

@@ -7072,7 +7072,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             break;
         }
         case MOVE_RUN_BACK:
-            return;
+            break;
         case MOVE_SWIM:
         {
             main_speed_mod  = GetMaxPositiveAuraModifier(SPELL_AURA_MOD_INCREASE_SWIM_SPEED);
@@ -7116,10 +7116,19 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced, float ratio)
             speed *= sWorld.getConfig(((Player*)this)->InBattleGround() ? CONFIG_FLOAT_GHOST_RUN_SPEED_BG : CONFIG_FLOAT_GHOST_RUN_SPEED_WORLD);
     }
 
-    // Apply strongest slow aura mod to speed
-    int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
-    if (slow)
-        speed *= (100.0f + slow) / 100.0f;
+    switch (mtype)
+    {
+        case MOVE_RUN:
+        case MOVE_RUN_BACK:
+        case MOVE_SWIM:
+        {
+            // Apply strongest slow aura mod to speed
+            int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
+            if (slow)
+                speed *= (100.0f + slow) / 100.0f;
+            break;
+        }
+    }
 
     if (IsCreature())
     {
