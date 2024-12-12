@@ -2045,14 +2045,6 @@ void ObjectMgr::LoadCreatureClassLevelStats()
         } while (result->NextRow());
     }
 
-    // placeholder values
-    constexpr float phMeleeDamage = 1.5f;
-    constexpr float phRangedDamage = 1.3f;
-    constexpr float phDamageIncreasePerLevel = 1.2f;
-    constexpr int32 phStat = 20;
-    constexpr float phStatIncreasePerLevel = 0.1f;
-    constexpr int32 phArmorPerLevel = 30;
-
     for (auto unitClass : creatureClasses)
     {
         result = WorldDatabase.PQuery("SELECT MAX(`level_max`) FROM `creature_template` WHERE `unit_class`=%u", unitClass);
@@ -2125,37 +2117,37 @@ void ObjectMgr::LoadCreatureClassLevelStats()
                 if (cls.melee_damage <= 0.0f)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `melee_damage` = %g in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.melee_damage = phMeleeDamage + phMeleeDamage * phDamageIncreasePerLevel * i;
+                    cls.melee_damage = 1;
                 }
 
                 if (cls.ranged_damage <= 0.0f)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `ranged_damage` = %g in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.ranged_damage = phRangedDamage + phRangedDamage * phDamageIncreasePerLevel * i;
+                    cls.ranged_damage = 1;
                 }
 
                 if (cls.attack_power <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `attack_power` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.attack_power = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.attack_power = 1;
                 }
 
                 if (cls.ranged_attack_power <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `ranged_attack_power` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.ranged_attack_power = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.ranged_attack_power = 1;
                 }
 
                 if (cls.health <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `health` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.health = phStat * 2 + phStat * 2 * i;
+                    cls.health = 1;
                 }
 
                 if (cls.base_health <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `base_health` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.base_health = phStat + phStat * i;
+                    cls.base_health = 1;
                 }
 
                 if (cls.mana < 0)
@@ -2173,31 +2165,31 @@ void ObjectMgr::LoadCreatureClassLevelStats()
                 if (cls.strength <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `strength` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.strength = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.strength = 1;
                 }
 
                 if (cls.agility <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `agility` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.agility = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.agility = 1;
                 }
 
                 if (cls.stamina <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `stamina` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.stamina = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.stamina = 1;
                 }
 
                 if (cls.intellect <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `intellect` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.intellect = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.intellect = 1;
                 }
 
                 if (cls.spirit <= 0)
                 {
                     sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Invalid `spirit` = %i in `creature_classlevelstats` for `class`=%u and `level`=%u!", cls.melee_damage, unitClass, level);
-                    cls.spirit = phStat + phStat * phStatIncreasePerLevel * i;
+                    cls.spirit = 1;
                 }
 
                 if (cls.armor < 0)
@@ -2215,62 +2207,35 @@ void ObjectMgr::LoadCreatureClassLevelStats()
             if (!cls.health)
             {
                 sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Missing creature CLS data for `class` = %u and `level` = %u!", unitClass, i+1);
-                cls.melee_damage = phMeleeDamage + phMeleeDamage * phDamageIncreasePerLevel * i;
-                cls.ranged_damage = phRangedDamage + phRangedDamage * phDamageIncreasePerLevel * i;
-                cls.attack_power = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.ranged_attack_power = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.health = phStat * 2 + phStat * 2 * i;
-                cls.base_health = phStat + phStat * i;
-                cls.mana = phStat * 2 + phStat * 2 * i;
-                cls.base_mana = phStat + phStat * i;
-                cls.strength = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.agility = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.stamina = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.intellect = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.spirit = phStat + phStat * phStatIncreasePerLevel * i;
-                cls.armor = phArmorPerLevel * i;
+                Log::WaitBeforeContinueIfNeed();
+                exit(1);
             }
         }
 
         if (currentMaxLevel < requiredMaxLevel)
         {
-            CreatureClassLevelStats& penultimateLevelCls = m_CreatureCLSMap[unitClass][currentMaxLevel - 2];
+            CreatureClassLevelStats& minLevelCls = m_CreatureCLSMap[unitClass][0];
             CreatureClassLevelStats& maxLevelCls = m_CreatureCLSMap[unitClass][currentMaxLevel - 1];
-
-            float const meleeDamageIncreasePerLevel = std::max(1.03f, maxLevelCls.melee_damage / penultimateLevelCls.melee_damage);
-            float const rangedDamageIncreasePerLevel = std::max(1.03f, maxLevelCls.ranged_damage / penultimateLevelCls.ranged_damage);
-            float const attackPowerIncreasePerLevel = std::max(1.03f, float(maxLevelCls.attack_power) / float(penultimateLevelCls.attack_power));
-            float const rangedAttackPowerIncreasePerLevel = std::max(1.03f, float(maxLevelCls.ranged_attack_power) / float(penultimateLevelCls.ranged_attack_power));
-            float const healthIncreasePerLevel = std::max(1.03f, float(maxLevelCls.health) / float(penultimateLevelCls.health));
-            float const baseHealthIncreasePerLevel = std::max(1.03f, float(maxLevelCls.base_health) / float(penultimateLevelCls.base_health));
-            float const manaIncreasePerLevel = std::max(1.03f, float(maxLevelCls.mana) / float(penultimateLevelCls.mana));
-            float const baseManaIncreasePerLevel = std::max(1.03f, float(maxLevelCls.base_mana) / float(penultimateLevelCls.base_mana));
-            float const strengthIncreasePerLevel = std::max(1.03f, float(maxLevelCls.strength) / float(penultimateLevelCls.strength));
-            float const agilityIncreasePerLevel = std::max(1.03f, float(maxLevelCls.agility) / float(penultimateLevelCls.agility));
-            float const staminaIncreasePerLevel = std::max(1.03f, float(maxLevelCls.stamina) / float(penultimateLevelCls.stamina));
-            float const intellectIncreasePerLevel = std::max(1.03f, float(maxLevelCls.intellect) / float(penultimateLevelCls.intellect));
-            float const spiritIncreasePerLevel = std::max(1.03f, float(maxLevelCls.spirit) / float(penultimateLevelCls.spirit));
-            float const armorIncreasePerLevel = std::max(1.03f, float(maxLevelCls.armor) / float(penultimateLevelCls.armor));
 
             for (uint32 i = currentMaxLevel; i < requiredMaxLevel; i++)
             {
                 CreatureClassLevelStats& cls = m_CreatureCLSMap[unitClass][i];
                 if (!cls.health)
                 {
-                    cls.melee_damage = maxLevelCls.melee_damage * std::pow(meleeDamageIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.ranged_damage = maxLevelCls.ranged_damage * std::pow(rangedDamageIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.attack_power = maxLevelCls.attack_power * std::pow(attackPowerIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.ranged_attack_power = maxLevelCls.ranged_attack_power * std::pow(rangedAttackPowerIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.health = maxLevelCls.health * std::pow(healthIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.base_health = maxLevelCls.base_health * std::pow(baseHealthIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.mana = maxLevelCls.mana * std::pow(manaIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.base_mana = maxLevelCls.base_mana * std::pow(baseManaIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.strength = maxLevelCls.strength * std::pow(strengthIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.agility = maxLevelCls.agility * std::pow(agilityIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.stamina = maxLevelCls.stamina * std::pow(staminaIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.intellect = maxLevelCls.intellect * std::pow(intellectIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.spirit = maxLevelCls.spirit * std::pow(spiritIncreasePerLevel, 1 + (i - currentMaxLevel));
-                    cls.armor = maxLevelCls.armor * std::pow(armorIncreasePerLevel, 1 + (i - currentMaxLevel));
+                    cls.melee_damage = InterpolateValueAtIndex(1, minLevelCls.melee_damage, currentMaxLevel, maxLevelCls.melee_damage, i + 1);
+                    cls.ranged_damage = InterpolateValueAtIndex(1, minLevelCls.ranged_damage, currentMaxLevel, maxLevelCls.ranged_damage, i + 1);
+                    cls.attack_power = InterpolateValueAtIndex(1, minLevelCls.attack_power, currentMaxLevel, maxLevelCls.attack_power, i + 1);
+                    cls.ranged_attack_power = InterpolateValueAtIndex(1, minLevelCls.ranged_attack_power, currentMaxLevel, maxLevelCls.ranged_attack_power, i + 1);
+                    cls.health = InterpolateValueAtIndex(1, minLevelCls.health, currentMaxLevel, maxLevelCls.health, i + 1);
+                    cls.base_health = InterpolateValueAtIndex(1, minLevelCls.base_health, currentMaxLevel, maxLevelCls.base_health, i + 1);
+                    cls.mana = InterpolateValueAtIndex(1, minLevelCls.mana, currentMaxLevel, maxLevelCls.mana, i + 1);
+                    cls.base_mana = InterpolateValueAtIndex(1, minLevelCls.base_mana, currentMaxLevel, maxLevelCls.base_mana, i + 1);
+                    cls.strength = InterpolateValueAtIndex(1, minLevelCls.strength, currentMaxLevel, maxLevelCls.strength, i + 1);
+                    cls.agility = InterpolateValueAtIndex(1, minLevelCls.agility, currentMaxLevel, maxLevelCls.agility, i + 1);
+                    cls.stamina = InterpolateValueAtIndex(1, minLevelCls.stamina, currentMaxLevel, maxLevelCls.stamina, i + 1);
+                    cls.intellect = InterpolateValueAtIndex(1, minLevelCls.intellect, currentMaxLevel, maxLevelCls.intellect, i + 1);
+                    cls.spirit = InterpolateValueAtIndex(1, minLevelCls.spirit, currentMaxLevel, maxLevelCls.spirit, i + 1);
+                    cls.armor = InterpolateValueAtIndex(1, std::max(1, minLevelCls.armor), currentMaxLevel, std::max(1, maxLevelCls.armor), i + 1);
                 }
             }
         }

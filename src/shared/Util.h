@@ -442,4 +442,15 @@ typedef char const*(*ValueToStringFunc) (uint32 value);
 
 std::string FlagsToString(uint32 flags, ValueToStringFunc getNameFunc);
 
+inline float GetLambda(float startIndex, float endIndex, float currentIndex)
+{
+    return (currentIndex - startIndex) / (endIndex - startIndex);
+}
+
+inline float InterpolateValueAtIndex(float startIndex, float startValue, float endIndex, float endValue, float currentIndex)
+{
+    return startValue + GetLambda(startIndex, endIndex, currentIndex) * (endValue - startValue);
+}
+
+
 #endif
