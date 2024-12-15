@@ -3151,8 +3151,8 @@ bool Map::GetWalkHitPosition(GenericTransport* transport, float srcX, float srcY
     }
 
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
-    dtNavMeshQuery const* m_navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
-    if (!m_navMeshQuery)
+    dtNavMeshQuery const* navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
+    if (!navMeshQuery)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "WalkHitPos: No nav mesh loaded !");
         return false;
@@ -3174,7 +3174,7 @@ bool Map::GetWalkHitPosition(GenericTransport* transport, float srcX, float srcY
     if (!locatedOnSteepSlope)
         filter.setExcludeFlags(NAV_STEEP_SLOPES);
 
-    dtPolyRef startRef = PathInfo::FindWalkPoly(m_navMeshQuery, point, filter, closestPoint, zSearchDist);
+    dtPolyRef startRef = PathInfo::FindWalkPoly(navMeshQuery, point, filter, closestPoint, zSearchDist);
     if (!startRef)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "WalkHitPos: Start poly not found");
@@ -3187,7 +3187,7 @@ bool Map::GetWalkHitPosition(GenericTransport* transport, float srcX, float srcY
     int visitedCount = 0;
     float t = 0.0f;
     float hitNormal[3] = {0}; // Normal of wall hit. Not always defined by raycast (if no wall hit)
-    dtStatus result = m_navMeshQuery->raycast(startRef, closestPoint, endPosition, &filter, &t, hitNormal, visited, &visitedCount, 50);
+    dtStatus result = navMeshQuery->raycast(startRef, closestPoint, endPosition, &filter, &t, hitNormal, visited, &visitedCount, 50);
     if (dtStatusFailed(result) || !visitedCount)
     {
         sLog.Out(LOG_BASIC, LOG_LVL_DETAIL, "WalkHitPos: Navmesh raycast failed");
@@ -3201,14 +3201,14 @@ bool Map::GetWalkHitPosition(GenericTransport* transport, float srcX, float srcY
             endPosition[i] = point[i] + (endPosition[i] - point[i]) * hitNormal[i];
     }
 
-    if (dtStatusFailed(m_navMeshQuery->closestPointOnPoly(visited[visitedCount - 1], endPosition, endPosition, nullptr)))
+    if (dtStatusFailed(navMeshQuery->closestPointOnPoly(visited[visitedCount - 1], endPosition, endPosition, nullptr)))
         return false;
 
     // Compute complete path, and at each path step, check for dynamic LoS collision
     // Rq: This is non-sense on Transports, since we are using position offsets ...
     float pathPoints[MAX_POINT_PATH_LENGTH * VERTEX_SIZE];
     int pointCount = 0;
-    result = m_navMeshQuery->findStraightPath(
+    result = navMeshQuery->findStraightPath(
         closestPoint,         // start position
         endPosition,          // end position
         visited,              // current path
@@ -3289,7 +3289,7 @@ bool Map::GetWalkRandomPosition(GenericTransport* transport, float &x, float &y,
 
     // Find the navMeshQuery.
     MMAP::MMapManager* mmap = MMAP::MMapFactory::createOrGetMMapManager();
-    dtNavMeshQuery const* m_navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
+    dtNavMeshQuery const* navMeshQuery = transport ? mmap->GetModelNavMeshQuery(transport->GetDisplayId()) : mmap->GetNavMeshQuery(GetId());
     float radius = maxRadius * rand_norm_f();
 
     // Find a valid position nearby.
@@ -3298,19 +3298,19 @@ bool Map::GetWalkRandomPosition(GenericTransport* transport, float &x, float &y,
     if (transport)
         transport->CalculatePassengerOffset(point[2], point[0], point[1]);
 
-    if (m_navMeshQuery)
+    if (navMeshQuery)
     {
         // ATTENTION : Positions are Y,Z,X
         float closestPoint[3] = { 0.0f, 0.0f, 0.0f };
         dtQueryFilter filter;
         filter.setIncludeFlags(moveAllowedFlags);
         filter.setExcludeFlags(NAV_STEEP_SLOPES);
-        dtPolyRef startRef = PathInfo::FindWalkPoly(m_navMeshQuery, point, filter, closestPoint);
+        dtPolyRef startRef = PathInfo::FindWalkPoly(navMeshQuery, point, filter, closestPoint);
         if (!startRef)
             return false;
 
         dtPolyRef randomPosRef = 0;
-        dtStatus result = m_navMeshQuery->findRandomPointAroundCircle(startRef, closestPoint, maxRadius, &filter, rand_norm_f, &randomPosRef, point);
+        dtStatus result = navMeshQuery->findRandomPointAroundCircle(startRef, closestPoint, maxRadius, &filter, rand_norm_f, &randomPosRef, point);
         if (dtStatusFailed(result) || !MaNGOS::IsValidMapCoord(point[2], point[0], point[1]))
             return false;
 
@@ -3323,12 +3323,12 @@ bool Map::GetWalkRandomPosition(GenericTransport* transport, float &x, float &y,
         dtPolyRef visited[10] = { 0 };
         int visitedCount = 0;
         float hitNormal[3] = { 0 }; // Normal of wall hit.
-        result = m_navMeshQuery->raycast(startRef, closestPoint, endPosition, &filter, &t, hitNormal, visited, &visitedCount, 10);
+        result = navMeshQuery->raycast(startRef, closestPoint, endPosition, &filter, &t, hitNormal, visited, &visitedCount, 10);
         if (dtStatusFailed(result) || !visitedCount)
             return false;
         for (int i = 0; i < 3; ++i)
             endPosition[i] += hitNormal[i] * 0.5f;
-        result = m_navMeshQuery->closestPointOnPoly(visited[visitedCount - 1], endPosition, endPosition, nullptr);
+        result = navMeshQuery->closestPointOnPoly(visited[visitedCount - 1], endPosition, endPosition, nullptr);
         if (dtStatusFailed(result) || !MaNGOS::IsValidMapCoord(endPosition[2], endPosition[0], endPosition[1]))
             return false;
     }
