@@ -288,7 +288,8 @@ struct boss_majordomoAI : public ScriptedAI
         {
             case 6:
                 m_creature->GetMotionMaster()->MovePoint(POINT_SUMMON1, (float)POINT_SUMMON1_X, (float)POINT_SUMMON1_Y, (float)POINT_SUMMON1_Z);
-                m_creature->SummonGameObject(178108, 842.237488f, -833.683105f, -231.916498f, 3.000000f, 0, 0, 0, 0, 0);
+                m_creature->SummonGameObject(178107, 838.951f, -830.383f, -230.206f, 0.837757f, 0, 0, 0.406736f, 0.913546f, 0);
+                m_creature->SummonGameObject(178108, 839.279f, -831.058f, -230.202f, 4.90438f, 0, 0, -0.636078f, 0.771625f, 0);
                 m_creature->CastSpell(m_creature, 19774, false);
                 DoScriptText(SAY_MAJ, m_creature);
                 break;

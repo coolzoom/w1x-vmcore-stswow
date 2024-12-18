@@ -2119,7 +2119,7 @@ struct AV_NpcEventAI : public npc_escortAI
                         it->CastSpell(m_creature, AV_INVOCATION_SPELL, false);
                     m_RamRiderList.clear();
 
-                    m_creature->SummonGameObject(OBJECT_WB_H_INVOCATION, -360.006989f, -130.33f, 26.4321f, 5.6635f, 0, 0, 0, 0, -1, false);
+                    m_creature->SummonGameObject(OBJECT_WB_H_INVOCATION, -360.139f, -133.403f, 26.4856f, 4.41568f, 0, 0, -0.803857f, 0.594823f, -1, false);
                     m_creature->SetHomePosition(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 0.0f);
                     Stop();//SetEscortPaused(true);
                     isGobSummoned = true;
@@ -2152,7 +2152,7 @@ struct AV_NpcEventAI : public npc_escortAI
                         it->CastSpell(m_creature, AV_INVOCATION_SPELL, false);
                     m_RamRiderList.clear();
 
-                    m_creature->SummonGameObject(OBJECT_WB_A_INVOCATION, -199.7f, -342.698f, 6.809f, 1.69646f, 0, 0, 0, 0, -1, false);
+                    m_creature->SummonGameObject(OBJECT_WB_A_INVOCATION, -199.993f, -343.217f, 6.77662f, 3.68265f, 0, 0, -0.96363f, 0.267241f, -1, false);
                     m_creature->SetHomePosition(m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ(), 0.0f);
                     Stop();//SetEscortPaused(true);
                     isGobSummoned = true;
