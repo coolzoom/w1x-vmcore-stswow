@@ -630,33 +630,6 @@ void Player::UpdateDodgePercentage()
     SetStatFloatValue(PLAYER_DODGE_PERCENTAGE, value);
 }
 
-void Player::UpdateSpellCritChance(uint32 school)
-{
-    // For normal school set zero crit chance
-    if (school == SPELL_SCHOOL_NORMAL)
-    {
-        m_SpellCritPercentage[1] = 0.0f;
-        return;
-    }
-    // For others recalculate it from:
-    float crit = 0.0f;
-    // Crit from Intellect
-    crit += GetSpellCritFromIntellect();
-    // Increase crit from SPELL_AURA_MOD_SPELL_CRIT_CHANCE
-    crit += GetTotalAuraModifier(SPELL_AURA_MOD_SPELL_CRIT_CHANCE);
-    // Increase crit by school from SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL
-    crit += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, 1 << school);
-
-    // Store crit value
-    m_SpellCritPercentage[school] = crit;
-}
-
-void Player::UpdateAllSpellCritChances()
-{
-    for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
-        UpdateSpellCritChance(i);
-}
-
 void Player::UpdateManaRegen()
 {
     // Mana regen from spirit
@@ -754,6 +727,7 @@ bool Creature::UpdateAllStats()
     UpdateMaxHealth();
     UpdateAttackPowerAndDamage();
     UpdateAttackPowerAndDamage(true);
+    UpdateAllSpellCritChances();
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
         UpdateMaxPower(Powers(i));
@@ -1004,6 +978,8 @@ bool Pet::UpdateAllStats()
 {
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
         UpdateStats(Stats(i));
+
+    UpdateAllSpellCritChances();
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
         UpdateMaxPower(Powers(i));

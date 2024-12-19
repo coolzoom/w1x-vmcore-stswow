@@ -5267,10 +5267,7 @@ void Aura::HandleModSpellCritChance(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (GetTarget()->GetTypeId() == TYPEID_PLAYER)
-        ((Player*)GetTarget())->UpdateAllSpellCritChances();
-    else
-        GetTarget()->m_baseSpellCritChance += apply ? m_modifier.m_amount : (-m_modifier.m_amount);
+    GetTarget()->UpdateAllSpellCritChances();
 }
 
 void Aura::HandleModSpellCritChanceSchool(bool /*apply*/, bool Real)
@@ -5279,12 +5276,9 @@ void Aura::HandleModSpellCritChanceSchool(bool /*apply*/, bool Real)
     if (!Real)
         return;
 
-    if (GetTarget()->GetTypeId() != TYPEID_PLAYER)
-        return;
-
     for (int school = SPELL_SCHOOL_NORMAL; school < MAX_SPELL_SCHOOL; ++school)
         if (m_modifier.m_miscvalue & (1 << school))
-            ((Player*)GetTarget())->UpdateSpellCritChance(school);
+            GetTarget()->UpdateSpellCritChance(school);
 }
 
 /********************************/

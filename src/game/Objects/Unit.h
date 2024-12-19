@@ -402,7 +402,7 @@ class Unit : public SpellCaster
     public:
         // Data
         float m_modSpellHitChance;
-        int32 m_baseSpellCritChance;
+        float m_modSpellCritChance[MAX_SPELL_SCHOOL];
         float m_threatModifier[MAX_SPELL_SCHOOL];
         float m_modAttackSpeedPct[3];
         float m_modRecalcDamagePct[3];
@@ -465,6 +465,11 @@ class Unit : public SpellCaster
         float GetUnitParryChance() const;
         float GetUnitBlockChance() const;
         float GetUnitCriticalChance(WeaponAttackType attackType, Unit const* pVictim) const;
+        float GetSpellCritFromIntellect() const;
+        float GetSpellCritPercent(SpellSchools school) const { return m_modSpellCritChance[school]; }
+        void SetSpellCritPercent(SpellSchools school, float percent) { m_modSpellCritChance[school] = percent; }
+        void UpdateAllSpellCritChances();
+        void UpdateSpellCritChance(uint32 school);
 
         virtual uint32 GetShieldBlockValue() const = 0;
         float GetPPMProcChance(uint32 WeaponSpeed, float PPM) const;

@@ -1631,7 +1631,6 @@ class Player final: public Unit
     private:
         float m_modManaRegen;
         float m_modManaRegenInterrupt;
-        float m_SpellCritPercentage[MAX_SPELL_SCHOOL];
         float m_carryHealthRegen;
         ObjectGuid m_comboTargetGuid;
         int8 m_comboPoints;
@@ -1652,7 +1651,6 @@ class Player final: public Unit
         static float GetManaBonusFromIntellect(float intellect);
         float GetMeleeCritFromAgility() const;
         float GetDodgeFromAgility() const;
-        float GetSpellCritFromIntellect() const;
         void InitStatBuffMods()
         {
             for (int i = STAT_STRENGTH; i < MAX_STATS; ++i) SetFloatValue(PLAYER_FIELD_POSSTAT0 + i, 0);
@@ -1696,8 +1694,6 @@ class Player final: public Unit
         void UpdateAllCritPercentages();
         void UpdateParryPercentage();
         void UpdateDodgePercentage();
-        void UpdateAllSpellCritChances();
-        void UpdateSpellCritChance(uint32 school);
         void CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, float& min_damage, float& max_damage, uint8 index = 0) const;
         float GetWeaponBasedAuraModifier(WeaponAttackType attType, AuraType auraType) const final;
 
@@ -1739,9 +1735,6 @@ class Player final: public Unit
         void ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply, bool form_change = false);
         void UpdateEquipSpellsAtFormChange();
         void outDebugStatsValues() const;
-
-        float GetSpellCritPercent(SpellSchools school) const { return m_SpellCritPercentage[school]; }
-        void SetSpellCritPercent(SpellSchools school, float percent) { m_SpellCritPercentage[school] = percent; }
 
         /*********************************************************/
         /***                   SKILLS SYSTEM                   ***/

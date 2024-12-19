@@ -140,12 +140,14 @@ Unit::Unit()
     for (float & stat : m_createStats)
         stat = 0.0f;
 
-    for (auto& m_createResistance : m_createResistances)
-        m_createResistance = 0;
+    for (auto& resistance : m_createResistances)
+        resistance = 0;
 
     m_attacking = nullptr;
     m_modSpellHitChance = 0.0f;
-    m_baseSpellCritChance = 5;
+    
+    for (float & crit : m_modSpellCritChance)
+        crit = 0.0f;
 
     m_combatTimer = 0;
     m_lastManaUseTimer = 0;
@@ -2799,6 +2801,80 @@ float Unit::GetUnitCriticalChance(WeaponAttackType attackType, Unit const* pVict
     return crit;
 }
 
+float Unit::GetSpellCritFromIntellect() const
+{
+    // Chance to crit is computed from INT and LEVEL as follows:
+    // chance = base + INT / (rate0 + rate1 * LEVEL)
+    // The formula keeps the crit chance at %5 on every level unless the player
+    // increases his intelligence by other means (enchants, buffs, talents, ...)
+
+    //[TZERO] from mangos 3462 for 1.12 MUST BE CHECKED
+
+    static const struct
+    {
+        float base;
+        float rate0, rate1;
+    }
+    crit_data[MAX_CLASSES] =
+    {
+        {   0.0f,   0.0f,  10.0f  },                        //  0: unused
+        {   0.0f,   0.0f,  10.0f  },                        //  1: warrior
+        {   3.70f, 14.77f,  0.65f },                        //  2: paladin
+        {   0.0f,   0.0f,  10.0f  },                        //  3: hunter
+        {   0.0f,   0.0f,  10.0f  },                        //  4: rogue
+        {   2.97f, 10.03f,  0.82f },                        //  5: priest
+        {   0.0f,   0.0f,  10.0f  },                        //  6: unused
+        {   3.54f, 11.51f,  0.80f },                        //  7: shaman
+        {   3.70f, 14.77f,  0.65f },                        //  8: mage
+        {   3.18f, 11.30f,  0.82f },                        //  9: warlock
+        {   0.0f,   0.0f,  10.0f  },                        // 10: unused
+        {   3.33f, 12.41f,  0.79f }                         // 11: druid
+    };
+    float crit_chance;
+
+    // only players use intelligence for critical chance computations
+    if (GetTypeId() == TYPEID_PLAYER)
+    {
+        int my_class = GetClass();
+        float crit_ratio = crit_data[my_class].rate0 + crit_data[my_class].rate1 * GetLevel();
+        crit_chance = crit_data[my_class].base + GetStat(STAT_INTELLECT) / crit_ratio;
+    }
+    else
+        crit_chance = 5.0f;
+
+    crit_chance = crit_chance > 0.0 ? crit_chance : 0.0;
+
+    return crit_chance;
+}
+
+void Unit::UpdateSpellCritChance(uint32 school)
+{
+    // For normal school set zero crit chance
+    if (school == SPELL_SCHOOL_NORMAL)
+    {
+        m_modSpellCritChance[1] = 0.0f;
+        return;
+    }
+    // For others recalculate it from:
+    float crit = 0.0f;
+    // Crit from Intellect
+    crit += GetSpellCritFromIntellect();
+    // Increase crit from SPELL_AURA_MOD_SPELL_CRIT_CHANCE
+    crit += GetTotalAuraModifier(SPELL_AURA_MOD_SPELL_CRIT_CHANCE);
+    // Increase crit by school from SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL
+    crit += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, 1 << school);
+
+    // Store crit value
+    m_modSpellCritChance[school] = crit;
+}
+
+void Unit::UpdateAllSpellCritChances()
+{
+    for (int i = SPELL_SCHOOL_NORMAL; i < MAX_SPELL_SCHOOL; ++i)
+        UpdateSpellCritChance(i);
+}
+
+
 void Unit::_UpdateSpells(uint32 time)
 {
     if (m_currentSpells[CURRENT_AUTOREPEAT_SPELL])
@@ -5350,13 +5426,9 @@ bool Unit::IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellS
                 if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
                     crit_chance = 0.0f;
                 // For other schools
-                else if (IsPlayer())
-                    crit_chance = ((Player*)this)->GetSpellCritPercent(GetFirstSchoolInMask(schoolMask));
                 else
-                {
-                    crit_chance = float(m_baseSpellCritChance);
-                    crit_chance += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, schoolMask);
-                }
+                    crit_chance = GetSpellCritPercent(GetFirstSchoolInMask(schoolMask));
+
                 // taken
                 if (!spellProto->IsPositiveSpell())
                 {
