@@ -1558,7 +1558,7 @@ void Aura::TriggerSpell()
                 for (auto const& it : pList)
                 {
                     Player* pPlayer = it.getSource();
-                    if (pPlayer->GetGUID() == casterGUID) continue;
+                    if (pPlayer->GetGUID() == casterGUID.GetRawValue()) continue;
                     if (!pPlayer) continue;
                     if (pPlayer->IsDead()) continue;
                     // 2d distance should be good enough
@@ -1826,6 +1826,12 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         }
                         return;
                     }
+                    case 20556: // Golemagg's Trust
+                    {
+                            m_isPeriodic = true;
+                            m_modifier.periodictime = 1000;
+                            return;
+                    }
                     case 22646:                             // Goblin Rocket Helmet
                     {
                         if (Unit* caster = GetCaster())
@@ -2062,8 +2068,18 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             case 23183:                                     // Mark of Frost
             {
                 if (m_removeMode == AURA_REMOVE_BY_DEATH)
-                    target->CastSpell(target, 23182, true, nullptr, this);
-                    return;
+                {
+                    if (Unit* caster = GetCaster())
+                    {
+                        // Azuregos
+                        // TODO verify: Only cast Mark of Frost on targets nearby when engaged?
+                        // if (caster->IsInCombat())
+                        // {
+                            target->CastSpell(target, 23182, true, nullptr, this);
+                        // }
+                    }
+                }
+                return;
             }
             case 28169:                                     // Mutating Injection
             {
@@ -6788,6 +6804,29 @@ void Aura::PeriodicDummyTick()
                     if (ribbonCount > 1)
                         target->CastSpell(GetCaster(), 29175, true); // Midsummer Pole Buff
 
+                    return;
+                }
+                case 20556: // Golemagg's Trust
+                {
+                    if (Unit* pCaster = GetCaster())
+                    {
+                        if (pCaster->IsDead() && !pCaster->IsInCombat())
+                        {
+                            return;
+                        }
+                        // Golemagg's Core Ragers will deal increased damage
+                        // and have 50% increased attack speed if tanked too close to Golemagg.
+                        std::list<Creature*> addList;
+                        pCaster->GetCreatureListWithEntryInGrid(addList, 11672, 30.0f);
+                        if (!addList.empty())
+                        {
+                            for (const auto& itr : addList)
+                            {
+                                // Golemagg's Trust Buff
+                                pCaster->CastSpell(itr, 20553, true, nullptr, this);
+                            }
+                        }
+                    }
                     return;
                 }
             }
