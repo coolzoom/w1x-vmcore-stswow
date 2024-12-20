@@ -83,7 +83,7 @@ GameObject::GameObject() : SpellCaster(),
     m_useTimes = 0;
     m_spellId = 0;
     m_cooldownTime = 0;
-    i_AI = nullptr;
+    m_AI = nullptr;
     m_model = nullptr;
     m_rotation = 0;
     m_playerGroupId = 0;
@@ -102,7 +102,7 @@ GameObject::~GameObject()
         }
     }
 
-    delete i_AI;
+    delete m_AI;
     delete m_model;
 
     MANGOS_ASSERT(m_spellDynObjects.empty());
@@ -133,7 +133,7 @@ void GameObject::AddToWorld()
     // After Object::AddToWorld so that for initial state the GO is added to the world (and hence handled correctly)
     UpdateCollisionState();
 
-    if (!i_AI)
+    if (!m_AI)
         AIM_Initialize();
 
     if (sWorld.getConfig(CONFIG_UINT32_SPELL_PROC_DELAY))
@@ -142,8 +142,8 @@ void GameObject::AddToWorld()
 
 void GameObject::AIM_Initialize()
 {
-    delete i_AI;
-    i_AI = sScriptMgr.GetGameObjectAI(this);
+    delete m_AI;
+    m_AI = sScriptMgr.GetGameObjectAI(this);
 }
 
 void GameObject::RemoveFromWorld()
@@ -335,8 +335,8 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
     UpdatePendingProcs(update_diff);
 
     // UpdateAI
-    if (i_AI)
-        i_AI->UpdateAI(update_diff);
+    if (m_AI)
+        m_AI->UpdateAI(update_diff);
 
     switch (m_lootState)
     {

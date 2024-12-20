@@ -6870,7 +6870,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (target->GetTransport() != m_caster->GetTransport())
                     return SPELL_FAILED_NOT_ON_TRANSPORT;
 
-                if (target->duel)
+                if (target->m_duel)
                     return SPELL_FAILED_TARGET_DUELING;
 
                 break;
@@ -8299,8 +8299,8 @@ bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
         Player* casterOwner = m_casterUnit->GetCharmerOrOwnerPlayerOrPlayerItself();
         Player* targetOwner = target->GetCharmerOrOwnerPlayerOrPlayerItself();
         if (targetOwner && casterOwner && casterOwner != targetOwner &&
-            targetOwner->duel && targetOwner->duel->startTime != 0 &&
-            targetOwner->duel->opponent != casterOwner)
+            targetOwner->m_duel && targetOwner->m_duel->startTime != 0 &&
+            targetOwner->m_duel->opponent != casterOwner)
             return false;
     }
 

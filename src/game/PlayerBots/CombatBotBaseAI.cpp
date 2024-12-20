@@ -3052,7 +3052,7 @@ bool CombatBotBaseAI::IsWearingShield(Player* pPlayer) const
 
 bool CombatBotBaseAI::IsInDuel() const
 {
-    return me->duel && me->duel->startTime != 0;
+    return me->m_duel && me->m_duel->startTime != 0;
 }
 
 CombatBotRoles CombatBotBaseAI::GetRole() const

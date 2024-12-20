@@ -5602,34 +5602,34 @@ void Spell::EffectDuel(SpellEffectIndex effIdx)
     Player* target = (Player*)unitTarget;
 
     // if the caster is already in a duel or has issued a challenge
-    if (caster->duel && caster->duel->opponent != target)
+    if (caster->m_duel && caster->m_duel->opponent != target)
     {
-        if (caster->duel->startTime)
+        if (caster->m_duel->startTime)
             caster->DuelComplete(DUEL_WON);
         else
             caster->DuelComplete(DUEL_INTERRUPTED);
 
-       delete caster->duel;
-       delete target->duel;
-       caster->duel = target->duel = nullptr;
+       delete caster->m_duel;
+       delete target->m_duel;
+       caster->m_duel = target->m_duel = nullptr;
     }
 
     // if the caster attempts to duel somebody they're already in a duel with
-    if (caster->duel && caster->duel->opponent == target && caster->duel->startTime)
+    if (caster->m_duel && caster->m_duel->opponent == target && caster->m_duel->startTime)
     {
         SendCastResult(SPELL_FAILED_TARGET_ENEMY);
         return;
     }
 
     // if the target already has a pending duel/is dueling, reject the request
-    if (target->duel)
+    if (target->m_duel)
     {
         SendCastResult(SPELL_FAILED_TARGET_DUELING);
         return;
     }
 
     // caster or target already have requested duel
-    if (caster->duel || !target->GetSocial() || target->GetSocial()->HasIgnore(caster->GetObjectGuid()) || target->FindMap() != caster->FindMap())
+    if (caster->m_duel || !target->GetSocial() || target->GetSocial()->HasIgnore(caster->GetObjectGuid()) || target->FindMap() != caster->FindMap())
         return;
 
     // Players can only fight a duel with each other outside (=not inside dungeons and not in capital cities)
@@ -5682,13 +5682,13 @@ void Spell::EffectDuel(SpellEffectIndex effIdx)
     target->GetSession()->SendPacket(&data);
 
     // create duel-info
-    DuelInfo *duel   = new DuelInfo;
+    DuelInfo* duel   = new DuelInfo;
     duel->initiator  = caster;
     duel->opponent   = target;
     duel->startTime  = 0;
     duel->startTimer = 0;
 
-    DuelInfo *duel2   = new DuelInfo;
+    DuelInfo* duel2   = new DuelInfo;
     duel2->initiator  = caster;
     duel2->opponent   = caster;
     duel2->startTime  = 0;
@@ -5699,8 +5699,8 @@ void Spell::EffectDuel(SpellEffectIndex effIdx)
         duel->transportGuid  = t->GetGUIDLow();
         duel2->transportGuid = t->GetGUIDLow();
     }
-    caster->duel     = duel;
-    target->duel      = duel2;
+    caster->m_duel     = duel;
+    target->m_duel     = duel2;
 
     caster->SetGuidValue(PLAYER_DUEL_ARBITER, pGameObj->GetObjectGuid());
     target->SetGuidValue(PLAYER_DUEL_ARBITER, pGameObj->GetObjectGuid());
@@ -6490,10 +6490,7 @@ void Spell::EffectPlayerPull(SpellEffectIndex effIdx)
 
             // set immune anticheat and calculate speed
             if (Player* plr = unitTarget->ToPlayer())
-            {
                 plr->SetLaunched(true);
-                plr->SetXYSpeed(horizontalSpeed);
-            }
 
             unitTarget->KnockBack(angle, horizontalSpeed, verticalSpeed);
             break;

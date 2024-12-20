@@ -365,8 +365,8 @@ Unit* PartyBotAI::SelectAttackTarget(Player* pLeader) const
 {
     if (IsInDuel())
     {
-        if (me->duel->opponent && IsValidHostileTarget(me->duel->opponent))
-            return me->duel->opponent;
+        if (me->m_duel->opponent && IsValidHostileTarget(me->m_duel->opponent))
+            return me->m_duel->opponent;
     }
     else
     {

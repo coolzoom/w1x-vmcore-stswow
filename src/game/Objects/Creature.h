@@ -75,7 +75,7 @@ public:
 
 class Creature : public Unit
 {
-    CreatureAI *i_AI;
+    CreatureAI *m_AI;
 
     public:
 
@@ -203,10 +203,10 @@ class Creature : public Unit
         bool IsInEvadeMode() const;
 
         bool AIM_Initialize();
-        void SetAI(CreatureAI * ai) { i_AI = ai; }
+        void SetAI(CreatureAI * ai) { m_AI = ai; }
 
-        CreatureAI* AI() { return i_AI; }
-        CreatureAI const* AI() const { return i_AI; }
+        CreatureAI* AI() { return m_AI; }
+        CreatureAI const* AI() const { return m_AI; }
         void SetAInitializeOnRespawn(bool initialize)
         {
             if (initialize)
@@ -502,8 +502,8 @@ class Creature : public Unit
 
         // Auto evade timer (if target not reachable)
         // Tested on retail 5.4.0: Creatures evade after 3 seconds (but does not return to home position)
-        bool IsEvadeBecauseTargetNotReachable() const { return m_TargetNotReachableTimer > 3000; }
-        uint32 m_TargetNotReachableTimer;
+        bool IsEvadeBecauseTargetNotReachable() const { return m_targetNotReachableTimer > 3000; }
+        uint32 m_targetNotReachableTimer;
 
         std::shared_ptr<time_t> const& GetLastLeashExtensionTimePtr() const;
         void SetLastLeashExtensionTimePtr(std::shared_ptr<time_t> const& timer);

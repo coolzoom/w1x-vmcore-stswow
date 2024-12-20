@@ -610,7 +610,7 @@ void AreaAura::Update(uint32 diff)
                         {
                             Player* Target = itr->getSource();
                             if (Target && Target->IsAlive() && Target->GetSubGroup() == subgroup &&
-                               (!Target->duel || owner == Target) && caster->IsFriendlyTo(Target) &&
+                               (!Target->m_duel || owner == Target) && caster->IsFriendlyTo(Target) &&
                                (caster->IsPvP() || !Target->IsPvP())) // auras dont affect pvp flagged targets if caster is not flagged
                             {
                                 if (caster->IsWithinDistInMap(Target, m_radius))
@@ -3477,8 +3477,8 @@ void Aura::HandleModCharm(bool apply, bool Real)
                 pPlayer->GetSession()->DoLootRelease(lootGuid);
 
             pPlayer->SetControlledBy(caster);
-            if (pPlayer->i_AI && m_spellAuraHolder->GetId() == 28410)
-                pPlayer->i_AI->enablePositiveSpells = true;
+            if (pPlayer->m_AI && m_spellAuraHolder->GetId() == 28410)
+                pPlayer->m_AI->enablePositiveSpells = true;
         }
         target->UpdateControl();
 

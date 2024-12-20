@@ -401,7 +401,7 @@ struct boss_sapphironAI : public ScriptedAI
             m_creature->HandleEmote(EMOTE_ONESHOT_LIFTOFF);
             m_creature->SetHover(true);
 
-            m_creature->m_TargetNotReachableTimer = 0;
+            m_creature->m_targetNotReachableTimer = 0;
             if (m_creature->GetTemporaryFactionFlags() & TEMPFACTION_RESTORE_COMBAT_STOP)
                 m_creature->ClearTemporaryFaction();
 

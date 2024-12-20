@@ -1067,8 +1067,8 @@ class Player final: public Unit
         ItemDurationList m_itemDuration;
 
         TradeData* m_trade;
-        uint32 m_WeaponProficiency;
-        uint32 m_ArmorProficiency;
+        uint32 m_weaponProficiency;
+        uint32 m_armorProficiency;
 
         // internal common parts for CanStore/StoreItem functions
         InventoryResult _CanStoreItem_InSpecificSlot(uint8 bag, uint8 slot, ItemPosCountVec& dest, ItemPrototype const* pProto, uint32& count, bool swap, Item const* pSrcItem) const;
@@ -1203,10 +1203,10 @@ class Player final: public Unit
         void SendBuyError(BuyResult msg, Creature const* pCreature, uint32 item, uint32 param) const;
         void SendSellError(SellResult msg, Creature const* pCreature, ObjectGuid itemGuid, uint32 param) const;
         void SendOpenContainer() const;
-        void AddWeaponProficiency(uint32 newflag) { m_WeaponProficiency |= newflag; }
-        void AddArmorProficiency(uint32 newflag) { m_ArmorProficiency |= newflag; }
-        uint32 GetWeaponProficiency() const { return m_WeaponProficiency; }
-        uint32 GetArmorProficiency() const { return m_ArmorProficiency; }
+        void AddWeaponProficiency(uint32 newflag) { m_weaponProficiency |= newflag; }
+        void AddArmorProficiency(uint32 newflag) { m_armorProficiency |= newflag; }
+        uint32 GetWeaponProficiency() const { return m_weaponProficiency; }
+        uint32 GetArmorProficiency() const { return m_armorProficiency; }
         bool IsTwoHandUsed() const
         {
             Item* mainItem = GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
@@ -1791,15 +1791,15 @@ class Player final: public Unit
         uint32 m_areaUpdateId;
 
         // Current teleport data
-        WorldLocation m_teleport_dest;
-        uint32 m_teleport_options;
+        WorldLocation m_teleportDest;
+        uint32 m_teleportOptions;
         std::function<void()> m_teleportRecover;
         std::function<void()> m_teleportRecoverDelayed;
-        bool mSemaphoreTeleport_Near;
-        bool mSemaphoreTeleport_Far;
-        bool mPendingFarTeleport;
+        bool m_semaphoreTeleportNear;
+        bool m_semaphoreTeleportFar;
+        bool m_pendingFarTeleport;
 
-        uint32 m_DelayedOperations;
+        uint32 m_delayedOperations;
         bool m_bCanDelayTeleport;
         bool m_bHasDelayedTeleport;
         bool m_bHasBeenAliveAtDelayedTeleport;
@@ -1829,7 +1829,7 @@ class Player final: public Unit
         void ScheduleDelayedOperation(uint32 operation)
         {
             if (operation < DELAYED_END)
-                m_DelayedOperations |= operation;
+                m_delayedOperations |= operation;
         }
 
         Unit* m_mover;
@@ -1863,9 +1863,7 @@ class Player final: public Unit
         uint16 m_homebindAreaId;
 
         // knockback/jumping states
-        bool launched;
-        // not null only if player has knockback state
-        float xy_speed;
+        bool m_launched;
 
         LiquidTypeEntry const* m_lastLiquid;
         uint8 m_isunderwater;
@@ -1910,13 +1908,13 @@ class Player final: public Unit
         bool SetPosition(float x, float y, float z, float orientation, bool teleport = false);
         void SetBindPoint(ObjectGuid guid) const;
 
-        WorldLocation& GetTeleportDest() { return m_teleport_dest; }
-        bool IsBeingTeleported() const { return mSemaphoreTeleport_Near || mSemaphoreTeleport_Far || mPendingFarTeleport; }
-        bool IsBeingTeleportedNear() const { return mSemaphoreTeleport_Near; }
-        bool IsBeingTeleportedFar() const { return mSemaphoreTeleport_Far; }
+        WorldLocation& GetTeleportDest() { return m_teleportDest; }
+        bool IsBeingTeleported() const { return m_semaphoreTeleportNear || m_semaphoreTeleportFar || m_pendingFarTeleport; }
+        bool IsBeingTeleportedNear() const { return m_semaphoreTeleportNear; }
+        bool IsBeingTeleportedFar() const { return m_semaphoreTeleportFar; }
         void SetSemaphoreTeleportNear(bool semphsetting);
         void SetSemaphoreTeleportFar(bool semphsetting);
-        void SetPendingFarTeleport(bool pending) { mPendingFarTeleport = pending; }
+        void SetPendingFarTeleport(bool pending) { m_pendingFarTeleport = pending; }
         void ExecuteTeleportNear();
         void ProcessDelayedOperations();
 
@@ -2024,10 +2022,8 @@ class Player final: public Unit
         void DismountCheck();
 
         // knockback/jumping states
-        bool IsLaunched() const { return launched; }
-        void SetLaunched(bool apply) { launched = apply; }
-        float GetXYSpeed() const { return xy_speed; }
-        void SetXYSpeed(float speed) { xy_speed = speed; }
+        bool IsLaunched() const { return m_launched; }
+        void SetLaunched(bool apply) { m_launched = apply; }
 
         void SendRaidGroupOnlyError(uint32 timer, RaidGroupError error);
         void SendInitialPacketsBeforeAddToMap();
@@ -2166,9 +2162,9 @@ class Player final: public Unit
         bool CanBeDetected() const override { return m_cannotBeDetectedTimer <= 0; }
 
         // PlayerAI management
-        PlayerAI* i_AI;
-        PlayerAI* AI() { return i_AI; }
-        void SetAI(PlayerAI* otherAI) { i_AI = otherAI; }
+        PlayerAI* m_AI;
+        PlayerAI* AI() { return m_AI; }
+        void SetAI(PlayerAI* otherAI) { m_AI = otherAI; }
         void SetControlledBy(Unit* pWho);
         void RemoveAI();
         void RemoveTemporaryAI(); // will restore player bot AI if needed
@@ -2216,7 +2212,7 @@ class Player final: public Unit
 
     private:
         bool m_isStandUpScheduled;
-        uint32 m_DetectInvTimer;
+        uint32 m_detectInvisibilityTimer;
         uint32 m_ExtraFlags;
         ObjectGuid m_curSelectionGuid;
         ResurrectionData m_resurrectData;
@@ -2299,7 +2295,7 @@ class Player final: public Unit
 
         void RemoveDelayedOperation(uint32 operation)
         {
-            m_DelayedOperations &= ~operation;
+            m_delayedOperations &= ~operation;
         }
         inline bool HasScheduledEvent() const { return m_Events.HasScheduledEvent(); }
 
@@ -2407,8 +2403,8 @@ class Player final: public Unit
         bool IsInInterFactionMode() const;
 
         // todo: -maybe move UpdateDuelFlag+DuelComplete to independent DuelHandler.
-        DuelInfo* duel;
-        bool IsInDuelWith(Player const* player) const { return duel && duel->opponent == player && duel->startTime != 0; }
+        DuelInfo* m_duel;
+        bool IsInDuelWith(Player const* player) const { return m_duel && m_duel->opponent == player && m_duel->startTime != 0; }
         void UpdateDuelFlag(time_t currTime);
         void CheckDuelDistance(time_t currTime);
         void DuelComplete(DuelCompleteType type);
@@ -2588,7 +2584,7 @@ class Player final: public Unit
     private:
         bool   m_enableInstanceSwitch;
         bool   m_smartInstanceRebind;
-        uint32 m_HomebindTimer;
+        uint32 m_homebindTimer;
 
         void ResetInstance(InstanceResetMethod method, BoundInstancesMap::iterator& itr);
     public:
@@ -2604,7 +2600,7 @@ class Player final: public Unit
         void AddInstanceEnterTime(uint32 instanceId, time_t enterTime) const;
 
         void UpdateHomebindTime(uint32 time);
-        bool m_InstanceValid;
+        bool m_instanceValid;
         // permanent binds and solo binds
         BoundInstancesMap m_boundInstances;
         mutable std::mutex m_boundInstancesMutex;
@@ -2679,16 +2675,16 @@ class Player final: public Unit
         /*********************************************************/
 
     private:
-        uint32 m_GuildIdInvited;
+        uint32 m_guildIdInvited;
     public:
         void SetInGuild(uint32 GuildId) { SetUInt32Value(PLAYER_GUILDID, GuildId); }
         void SetRank(uint32 rankId) { SetUInt32Value(PLAYER_GUILDRANK, rankId); }
-        void SetGuildIdInvited(uint32 GuildId) { m_GuildIdInvited = GuildId; }
+        void SetGuildIdInvited(uint32 GuildId) { m_guildIdInvited = GuildId; }
         uint32 GetGuildId() const { return GetUInt32Value(PLAYER_GUILDID); }
         uint32 GetRank() const { return GetUInt32Value(PLAYER_GUILDRANK); }
         static uint32 GetGuildIdFromDB(ObjectGuid guid);
         static uint32 GetRankFromDB(ObjectGuid guid);
-        int GetGuildIdInvited() const { return m_GuildIdInvited; }
+        int GetGuildIdInvited() const { return m_guildIdInvited; }
         static void RemovePetitionsAndSigns(ObjectGuid guid, uint32 exceptPetitionId = 0);
 };
 

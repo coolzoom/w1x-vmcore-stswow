@@ -190,8 +190,8 @@ Object::Object() : m_updateFlag(0)
     m_inWorld           = false;
     m_isNewObject       = false;
     m_objectUpdated     = false;
-    _deleted            = false;
-    _delayedActions     = 0;
+    m_deleted           = false;
+    m_delayedActions    = 0;
 }
 
 Object::~Object()
@@ -968,7 +968,7 @@ void Object::ClearUpdateMask(bool remove)
             RemoveFromClientUpdateList();
         m_objectUpdated = false;
     }
-    _delayedActions &= ~OBJECT_DELAYED_MARK_CLIENT_UPDATE;
+    m_delayedActions &= ~OBJECT_DELAYED_MARK_CLIENT_UPDATE;
 }
 
 bool Object::LoadValues(char const* data)
@@ -1392,9 +1392,9 @@ void Object::MarkForClientUpdate()
 
 void Object::ExecuteDelayedActions()
 {
-    if (_delayedActions & OBJECT_DELAYED_MARK_CLIENT_UPDATE)
+    if (m_delayedActions & OBJECT_DELAYED_MARK_CLIENT_UPDATE)
     {
-        if (m_inWorld && !_deleted)
+        if (m_inWorld && !m_deleted)
         {
             if (!m_objectUpdated)
             {
@@ -1402,13 +1402,13 @@ void Object::ExecuteDelayedActions()
                 m_objectUpdated = true;
             }
         }
-        _delayedActions &= ~OBJECT_DELAYED_MARK_CLIENT_UPDATE;
+        m_delayedActions &= ~OBJECT_DELAYED_MARK_CLIENT_UPDATE;
     }
-    if (_delayedActions & OBJECT_DELAYED_ADD_TO_REMOVE_LIST)
+    if (m_delayedActions & OBJECT_DELAYED_ADD_TO_REMOVE_LIST)
     {
         if (!IsDeleted() && IsInWorld())
             ((WorldObject*)this)->AddObjectToRemoveList();
-        _delayedActions &= ~OBJECT_DELAYED_ADD_TO_REMOVE_LIST;
+        m_delayedActions &= ~OBJECT_DELAYED_ADD_TO_REMOVE_LIST;
     }
 }
 
@@ -1453,7 +1453,7 @@ void WorldObject::SetVisibilityModifier(float f)
 
 WorldObject::WorldObject()
     :   m_isActiveObject(false), m_visibilityModifier(DEFAULT_VISIBILITY_MODIFIER), m_currMap(nullptr),
-        m_mapId(0), m_InstanceId(0), m_summonLimitAlert(0), worldMask(WORLD_DEFAULT_OBJECT), m_zoneScript(nullptr),
+        m_mapId(0), m_instanceId(0), m_summonLimitAlert(0), m_worldMask(WORLD_DEFAULT_OBJECT), m_zoneScript(nullptr),
         m_transport(nullptr)
 {
     m_movementInfo.stime = WorldTimer::getMSTime();
@@ -2286,7 +2286,7 @@ void WorldObject::SetMap(Map* map)
     m_currMap = map;
     //lets save current map's Id/instanceId
     m_mapId = map->GetId();
-    m_InstanceId = map->GetInstanceId();
+    m_instanceId = map->GetInstanceId();
 
     // Order is important, must be done after m_currMap is set
     SetZoneScript();
@@ -2312,11 +2312,11 @@ TerrainInfo const* WorldObject::GetTerrain() const
 
 void WorldObject::AddObjectToRemoveList()
 {
-    if (_deleted) // Already in the remove list
+    if (m_deleted) // Already in the remove list
         return;
 
     GetMap()->AddObjectToRemoveList(this);
-    _deleted = true;
+    m_deleted = true;
 }
 
 uint32 Map::GetSummonLimitForObject(uint64 guid) const
@@ -2887,7 +2887,7 @@ void Object::ForceValuesUpdateAtIndex(uint16 i)
 
 void WorldObject::SetWorldMask(uint32 newMask)
 {
-    worldMask = newMask;
+    m_worldMask = newMask;
 }
 
 bool WorldObject::CanSeeInWorld(WorldObject const* other) const
@@ -2899,7 +2899,7 @@ bool WorldObject::CanSeeInWorld(WorldObject const* other) const
     if (GetGUID() == other->GetGUID())
         return true;
 
-    return CanSeeInWorld(other->worldMask);
+    return CanSeeInWorld(other->m_worldMask);
 }
 
 bool WorldObject::CanSeeInWorld(uint32 otherPhaseMask) const
@@ -2909,9 +2909,9 @@ bool WorldObject::CanSeeInWorld(uint32 otherPhaseMask) const
             ((Player*)this)->IsGameMaster())
         return true;
     // Un monde en commun ?
-    if (worldMask & otherPhaseMask)
+    if (m_worldMask & otherPhaseMask)
         return true;
-    if (otherPhaseMask & worldMask)
+    if (otherPhaseMask & m_worldMask)
         return true;
     return false;
 }
@@ -3556,7 +3556,7 @@ ReputationRank WorldObject::GetReactionTo(WorldObject const* target) const
                     return REP_FRIENDLY;
 
                 // duel - always hostile to opponent
-                if (selfPlayerOwner->duel && selfPlayerOwner->duel->opponent == targetPlayerOwner && selfPlayerOwner->duel->startTime != 0 && !selfPlayerOwner->duel->finished)
+                if (selfPlayerOwner->m_duel && selfPlayerOwner->m_duel->opponent == targetPlayerOwner && selfPlayerOwner->m_duel->startTime != 0 && !selfPlayerOwner->m_duel->finished)
                     return REP_HOSTILE;
 
                 // same group - checks dependant only on our faction - skip FFA_PVP for example
@@ -3708,7 +3708,7 @@ bool WorldObject::IsValidAttackTarget(Unit const* target, bool checkAlive) const
     // PvP checks
     if (playerAffectingAttacker && playerAffectingTarget)
     {
-        if (playerAffectingAttacker->duel && playerAffectingAttacker->duel->opponent == playerAffectingTarget && playerAffectingAttacker->duel->startTime != 0)
+        if (playerAffectingAttacker->m_duel && playerAffectingAttacker->m_duel->opponent == playerAffectingTarget && playerAffectingAttacker->m_duel->startTime != 0)
             return true;
 
         if (playerAffectingTarget->IsPvP())
@@ -3756,7 +3756,7 @@ bool WorldObject::IsValidHelpfulTarget(Unit const* target, bool checkAlive) cons
             return true;
 
         // cannot help others in duels
-        if (playerAffectingTarget->duel && playerAffectingTarget->duel->startTime != 0)
+        if (playerAffectingTarget->m_duel && playerAffectingTarget->m_duel->startTime != 0)
             return false;
 
         // group forces friendly relations in ffa pvp

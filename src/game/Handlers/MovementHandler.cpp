@@ -92,8 +92,8 @@ void WorldSession::HandleMoveWorldportAckOpcode()
     }
 
     // reset instance validity, except if going to an instance inside an instance
-    if (!GetPlayer()->m_InstanceValid && !mEntry->IsDungeon())
-        GetPlayer()->m_InstanceValid = true;
+    if (!GetPlayer()->m_instanceValid && !mEntry->IsDungeon())
+        GetPlayer()->m_instanceValid = true;
 
     // relocate the player to the teleport destination
     if (!map)
@@ -341,10 +341,7 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     if (pPlayerMover)
     {
         if (IsFallEndOpcode(opcode) && pPlayerMover->IsLaunched())
-        {
             pPlayerMover->SetLaunched(false);
-            pPlayerMover->SetXYSpeed(0.0f);
-        }
 
         pPlayerMover->UpdateFallInformationIfNeed(movementInfo, opcode);
     }

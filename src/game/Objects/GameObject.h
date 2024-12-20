@@ -221,7 +221,7 @@ class GameObject : public SpellCaster
 
         // Gestion des GameObjectAI
         void AIM_Initialize();
-        GameObjectAI* AI() { return i_AI; }
+        GameObjectAI* AI() { return m_AI; }
 
         void UpdateCollisionState();
         void UpdateModel();                                 // updates model in case displayId were changed
@@ -282,7 +282,7 @@ class GameObject : public SpellCaster
 
         Position m_stationaryPosition;
 
-        GameObjectAI* i_AI;
+        GameObjectAI* m_AI;
 
         uint32 m_playerGroupId;
     private:

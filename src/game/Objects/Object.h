@@ -154,7 +154,7 @@ class Object
         virtual void BuildUpdateData(UpdateDataMapType& update_players);
         void MarkForClientUpdate();
         void SendForcedObjectUpdate();
-        void AddDelayedAction(ObjectDelayedAction e) { _delayedActions |= e; }
+        void AddDelayedAction(ObjectDelayedAction e) { m_delayedActions |= e; }
         void ExecuteDelayedActions();
 
         void BuildValuesUpdateBlockForPlayer(UpdateData& data, Player* target) const;
@@ -364,7 +364,7 @@ class Object
         void InitValues() { _InitValues(); }
 
         // Nostalrius
-        bool IsDeleted() const { return _deleted; }
+        bool IsDeleted() const { return m_deleted; }
 
         // Convertions
         inline bool IsWorldObject() const { return isType(TYPEMASK_WORLDOBJECT); }
@@ -429,8 +429,8 @@ class Object
         uint16 m_valuesCount;
 
         bool m_objectUpdated;
-        bool _deleted;          // Object in remove list
-        uint32 _delayedActions;
+        bool m_deleted;          // Object in remove list
+        uint32 m_delayedActions;
 
     private:
         bool m_inWorld;
@@ -543,7 +543,7 @@ class WorldObject : public Object
         bool GetRandomPoint(float x, float y, float z, float distance, float &rand_x, float &rand_y, float &rand_z) const;
 
         uint32 GetMapId() const { return m_mapId; }
-        uint32 GetInstanceId() const { return m_InstanceId; }
+        uint32 GetInstanceId() const { return m_instanceId; }
 
         uint32 GetZoneId() const;
         uint32 GetAreaId() const;
@@ -774,9 +774,9 @@ class WorldObject : public Object
         ViewPoint& GetViewPoint() { return m_viewPoint; }
 
         // WorldMask
-        uint32 worldMask;
+        uint32 m_worldMask;
         virtual void SetWorldMask(uint32 newMask);
-        uint32 GetWorldMask() const { return worldMask; }
+        uint32 GetWorldMask() const { return m_worldMask; }
         // Visibilite
         bool CanSeeInWorld(WorldObject const* other)  const;
         bool CanSeeInWorld(uint32 otherPhase)  const;
@@ -788,7 +788,7 @@ class WorldObject : public Object
         //use them ONLY in LoadFromDB()/Create() funcs and nowhere else!
         //mapId/instanceId should be set in SetMap() function!
         void SetLocationMapId(uint32 mapId) { m_mapId = mapId; }
-        void SetLocationInstanceId(uint32 _instanceId) { m_InstanceId = _instanceId; }
+        void SetLocationInstanceId(uint32 _instanceId) { m_instanceId = _instanceId; }
 
         bool IsWithinLootXPDist(WorldObject const* objToLoot) const;
 
@@ -811,19 +811,13 @@ class WorldObject : public Object
         // c.f. GetVisibilityModifier(). Be very conservative using this - a large
         // draw distance can be expensive for updates with lots of players
         float m_visibilityModifier;
-
         Map* m_currMap;                                     //current object's Map location
-
         uint32 m_mapId;                                     // object at map with map_id
-        uint32 m_InstanceId;                                // in map copy with instance id
-
+        uint32 m_instanceId;                                // in map copy with instance id
         Position m_position;
         Cell m_currentCell;                                 // store current cell where object listed
-
         ViewPoint m_viewPoint;
-
         WorldUpdateCounter m_updateTracker;
-
         uint32 m_summonLimitAlert;                          // Timer to alert GMs if a creature is at the summon limit
 };
 

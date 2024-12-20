@@ -604,21 +604,21 @@ Player::Player(WorldSession* session) : Unit(),
     m_auraUpdateMask = 0;
     m_LFGAreaId = 0;
 
-    duel = nullptr;
+    m_duel = nullptr;
 
-    m_GuildIdInvited = 0;
+    m_guildIdInvited = 0;
 
     m_atLoginFlags = AT_LOGIN_NONE;
 
-    mSemaphoreTeleport_Near = false;
-    mSemaphoreTeleport_Far = false;
-    mPendingFarTeleport = false;
+    m_semaphoreTeleportNear = false;
+    m_semaphoreTeleportFar = false;
+    m_pendingFarTeleport = false;
 
-    m_DelayedOperations = 0;
+    m_delayedOperations = 0;
     m_bCanDelayTeleport = false;
     m_bHasDelayedTeleport = false;
     m_bHasBeenAliveAtDelayedTeleport = true;                // overwrite always at setup teleport data, so not used infact
-    m_teleport_options = 0;
+    m_teleportOptions = 0;
 
     m_trade = nullptr;
 
@@ -644,8 +644,8 @@ Player::Player(WorldSession* session) : Unit(),
     m_loginTime = time(nullptr);
     m_createTime = m_loginTime;
     m_lastTick = m_loginTime;
-    m_WeaponProficiency = 0;
-    m_ArmorProficiency = 0;
+    m_weaponProficiency = 0;
+    m_armorProficiency = 0;
     m_canParry = false;
     m_canBlock = false;
     m_canDualWield = false;
@@ -668,8 +668,8 @@ Player::Player(WorldSession* session) : Unit(),
 
     /////////////////// Instance System /////////////////////
 
-    m_HomebindTimer = 0;
-    m_InstanceValid = true;
+    m_homebindTimer = 0;
+    m_instanceValid = true;
 
     for (auto& i : m_auraBaseMod)
     {
@@ -691,8 +691,8 @@ Player::Player(WorldSession* session) : Unit(),
     m_cannotBeDetectedTimer = 0;
 
     // Phasing
-    worldMask = WORLD_DEFAULT_CHAR;
-    i_AI = nullptr;
+    m_worldMask = WORLD_DEFAULT_CHAR;
+    m_AI = nullptr;
     m_cheatOptions = 0x0;
 
     m_lastFromClientCastedSpellID = 0;
@@ -708,7 +708,7 @@ Player::Player(WorldSession* session) : Unit(),
     m_petSpell = 0;
     m_areaCheckTimer = 0;
     m_skippedUpdateTime = 0;
-    m_DetectInvTimer = 1 * IN_MILLISECONDS;
+    m_detectInvisibilityTimer = 1 * IN_MILLISECONDS;
 
     // GM variables
     m_gmInvisibilityLevel = session->GetSecurity();
@@ -717,11 +717,8 @@ Player::Player(WorldSession* session) : Unit(),
         m_smartInstanceRebind = true;
 
     // TODO: remove it
-    launched = false;
-    xy_speed = 0.0f;
-
+    m_launched = false;
     m_justBoarded = false;
-
     m_cameraUpdateTimer = 0;
     m_longSightSpell = 0;
     m_longSightRange = 0.0f;
@@ -1522,8 +1519,8 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     //used to implement delayed far teleports
     SetCanDelayTeleport(true);
     Unit::Update(update_diff, p_time);
-    if (i_AI)
-        i_AI->UpdateAI(p_time);
+    if (m_AI)
+        m_AI->UpdateAI(p_time);
     SetCanDelayTeleport(false);
 
     time_t now = time(nullptr);
@@ -1533,25 +1530,25 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     UpdatePvPContestedFlagTimer(update_diff);
 
     // Delay delete duel
-    if (duel && duel->finished)
+    if (m_duel && m_duel->finished)
     {
-        delete duel;
-        duel = nullptr;
+        delete m_duel;
+        m_duel = nullptr;
     }
     UpdateDuelFlag(now);
 
     CheckDuelDistance(now);
 
     // Handle detect stealth units
-    if (m_DetectInvTimer > 0)
+    if (m_detectInvisibilityTimer > 0)
     {
-        if (update_diff >= m_DetectInvTimer)
+        if (update_diff >= m_detectInvisibilityTimer)
         {
             HandleStealthedUnitsDetection();
-            m_DetectInvTimer = 2000;
+            m_detectInvisibilityTimer = 2000;
         }
         else
-            m_DetectInvTimer -= update_diff;
+            m_detectInvisibilityTimer -= update_diff;
     }
 
     // Update items that have just a limited lifetime
@@ -1598,10 +1595,10 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     {
         if (GetTimeInnEnter() > 0)                          // Freeze update
         {
-            time_t time_inn = now - GetTimeInnEnter();
-            if (time_inn >= 10)                             // Freeze update
+            time_t timeInn = now - GetTimeInnEnter();
+            if (timeInn >= 10)
             {
-                SetRestBonus(GetRestBonus() + ComputeRest(time_inn));
+                SetRestBonus(GetRestBonus() + ComputeRest(timeInn));
                 UpdateInnerTime(now);
             }
         }
@@ -1715,7 +1712,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
     SendUpdateToOutOfRangeGroupMembers();
 
     if (IsHasDelayedTeleport())
-        TeleportTo(m_teleport_dest, m_teleport_options, m_teleportRecoverDelayed);
+        TeleportTo(m_teleportDest, m_teleportOptions, m_teleportRecoverDelayed);
 
     // Movement extrapolation & cheat computation - only if not already kicked!
     if (!GetSession()->IsConnected())
@@ -2201,7 +2198,7 @@ bool Player::SwitchInstance(uint32 newInstanceId)
         m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
     }
     // Stop duel
-    if (duel)
+    if (m_duel)
         if (GameObject* obj = GetMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER)))
             DuelComplete(DUEL_FLED);
 
@@ -2290,7 +2287,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     // The player was ported to another map and looses the duel immediately.
     // We have to perform this check before the teleport, otherwise the
     // ObjectAccessor won't find the flag.
-    if (duel && GetMapId() != mapid && FindMap())
+    if (m_duel && GetMapId() != mapid && FindMap())
         if (GameObject* obj = FindMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER)))
             DuelComplete(DUEL_FLED);
 
@@ -2316,8 +2313,8 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         {
             SetSemaphoreTeleportNear(true);
             //lets save teleport destination for player
-            m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
-            m_teleport_options = options;
+            m_teleportDest = WorldLocation(mapid, x, y, z, orientation);
+            m_teleportOptions = options;
             m_teleportRecoverDelayed = recover;
             return true;
         }
@@ -2339,7 +2336,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         }
 
         // this will be used instead of the current location in SaveToDB
-        m_teleport_dest = WorldLocation(mapid, x, y, z, orientation);
+        m_teleportDest = WorldLocation(mapid, x, y, z, orientation);
         DisableSpline();
         SetFallInformation(0);
 
@@ -2351,10 +2348,10 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         if (!GetSession()->PlayerLogout())
         {
             const auto wps = [this](){
-                MovementPacketSender::SendTeleportToController(this, m_teleport_dest.x, 
-                                                                     m_teleport_dest.y, 
-                                                                     m_teleport_dest.z, 
-                                                                     m_teleport_dest.o);
+                MovementPacketSender::SendTeleportToController(this, m_teleportDest.x, 
+                                                                     m_teleportDest.y, 
+                                                                     m_teleportDest.z, 
+                                                                     m_teleportDest.o);
             };
             if (recover)
                 m_teleportRecover = recover;
@@ -2492,7 +2489,7 @@ bool Player::ExecuteTeleportFar(ScheduledTeleportData* data)
         if (oldmap)
             oldmap->Remove(this, false);
 
-        m_teleport_dest = WorldLocation(mapid, data->x, data->y, data->z, data->orientation);
+        m_teleportDest = WorldLocation(mapid, data->x, data->y, data->z, data->orientation);
         DisableSpline();
         SetFallInformation(0);
         ScheduleDelayedOperation(DELAYED_CAST_HONORLESS_TARGET);
@@ -2529,7 +2526,7 @@ void Player::SendNewWorld()
 {
     // transfer finished, inform client to start load
     WorldPacket data(SMSG_NEW_WORLD, (20));
-    data << uint32(m_teleport_dest.mapId);
+    data << uint32(m_teleportDest.mapId);
     if (m_transport)
     {
         data << m_movementInfo.GetTransportPos().x;
@@ -2539,10 +2536,10 @@ void Player::SendNewWorld()
     }
     else
     {
-        data << m_teleport_dest.x;
-        data << m_teleport_dest.y;
-        data << m_teleport_dest.z;
-        data << m_teleport_dest.o;
+        data << m_teleportDest.x;
+        data << m_teleportDest.y;
+        data << m_teleportDest.z;
+        data << m_teleportDest.o;
     }
     GetSession()->SendPacket(&data);
     SendSavedInstances();
@@ -2580,10 +2577,10 @@ bool Player::TeleportToBGEntryPoint()
 
 void Player::ProcessDelayedOperations()
 {
-    if (m_DelayedOperations == 0)
+    if (m_delayedOperations == 0)
         return;
 
-    if (m_DelayedOperations & DELAYED_RESURRECT_PLAYER)
+    if (m_delayedOperations & DELAYED_RESURRECT_PLAYER)
     {
         ResurrectPlayer(0.0f, false);
 
@@ -2603,17 +2600,17 @@ void Player::ProcessDelayedOperations()
         SpawnCorpseBones();
     }
 
-    if (m_DelayedOperations & DELAYED_SAVE_PLAYER)
+    if (m_delayedOperations & DELAYED_SAVE_PLAYER)
         SaveToDB();
 
-    if (m_DelayedOperations & DELAYED_SPELL_CAST_DESERTER)
+    if (m_delayedOperations & DELAYED_SPELL_CAST_DESERTER)
         CastSpell(this, 26013, true);               // Deserter
 
-    if (m_DelayedOperations & DELAYED_CAST_HONORLESS_TARGET)
+    if (m_delayedOperations & DELAYED_CAST_HONORLESS_TARGET)
         CastSpell(this, 2479, true);
 
     //we have executed ALL delayed ops, so clear the flag
-    m_DelayedOperations = 0;
+    m_delayedOperations = 0;
 }
 
 void Player::AddToWorld()
@@ -3975,8 +3972,8 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
 
     PlayerSpellState state = learning ? PLAYERSPELL_NEW : PLAYERSPELL_UNCHANGED;
 
-    bool disabled_case = false;
-    bool superceded_old = false;
+    bool disabledCase = false;
+    bool supercededOld = false;
 
     PlayerSpellMap::iterator itr = m_spells.find(spellId);
     if (itr != m_spells.end())
@@ -4055,7 +4052,7 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
             if (disabled)
                 return false;
 
-            disabled_case = true;
+            disabledCase = true;
         }
         else switch (itr->second.state)
             {
@@ -4080,7 +4077,7 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
 
     TalentSpellPos const* talentPos = GetTalentSpellPos(spellId);
 
-    if (!disabled_case) // skip new spell adding if spell already known (disabled spells case)
+    if (!disabledCase) // skip new spell adding if spell already known (disabled spells case)
     {
         // talent: unlearn all other talent ranks (high and low)
         if (talentPos)
@@ -4140,7 +4137,7 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
                             playerSpell2.active = false;
                             if (playerSpell2.state != PLAYERSPELL_NEW)
                                 playerSpell2.state = PLAYERSPELL_CHANGED;
-                            superceded_old = true;          // new spell replace old in action bars and spell book.
+                            supercededOld = true;          // new spell replace old in action bars and spell book.
                         }
                         else if (m_spell.first == spellId)
                         {
@@ -4219,7 +4216,7 @@ bool Player::AddSpell(uint32 spellId, bool active, bool learning, bool dependent
     }
 
     // return true (for send learn packet) only if spell active (in case ranked spells) and not replace old spell
-    return active && !disabled && !superceded_old;
+    return active && !disabled && !supercededOld;
 }
 
 bool Player::IsNeedCastPassiveLikeSpellAtLearn(SpellEntry const* spellInfo) const
@@ -4273,7 +4270,7 @@ void Player::LearnSpell(uint32 spellId, bool dependent, bool talent)
     }
 }
 
-void Player::RemoveSpell(uint32 spellId, bool disabled, bool learn_low_rank)
+void Player::RemoveSpell(uint32 spellId, bool disabled, bool learnLowRank)
 {
     PlayerSpellMap::iterator itr = m_spells.find(spellId);
     if (itr == m_spells.end())
@@ -4307,8 +4304,8 @@ void Player::RemoveSpell(uint32 spellId, bool disabled, bool learn_low_rank)
     if (itr == m_spells.end() || playerSpell.state == PLAYERSPELL_REMOVED)
         return;
 
-    bool cur_active    = itr->second.active;
-    bool cur_dependent = itr->second.dependent;
+    bool currentActive    = itr->second.active;
+    bool currentDependent = itr->second.dependent;
 
     if (disabled)
     {
@@ -4356,44 +4353,44 @@ void Player::RemoveSpell(uint32 spellId, bool disabled, bool learn_low_rank)
     UpdateSpellTrainedSkills(spellId, false);
 
     // activate lesser rank in spellbook/action bar, and cast it if need
-    bool prev_activate = false;
+    bool previousActivated = false;
 
-    if (uint32 prev_id = sSpellMgr.GetPrevSpellInChain(spellId))
+    if (uint32 previousId = sSpellMgr.GetPrevSpellInChain(spellId))
     {
-        uint32 nextId = sSpellMgr.GetSpellBookSuccessorSpellId(prev_id);
+        uint32 nextId = sSpellMgr.GetSpellBookSuccessorSpellId(previousId);
 
         // if talent then lesser rank also talent and need learn
         if (talentPos)
         {
-            if (learn_low_rank)
-                LearnSpell(prev_id, false);
+            if (learnLowRank)
+                LearnSpell(previousId, false);
         }
         // if ranked non-stackable spell: need activate lesser rank and update dependence state
-        else if (cur_active && nextId == spellId)
+        else if (currentActive && nextId == spellId)
         {
             // need manually update dependence state (learn spell ignore like attempts)
-            PlayerSpellMap::iterator prev_itr = m_spells.find(prev_id);
+            PlayerSpellMap::iterator prev_itr = m_spells.find(previousId);
             if (prev_itr != m_spells.end())
             {
                 PlayerSpell& spell = prev_itr->second;
-                if (spell.dependent != cur_dependent)
+                if (spell.dependent != currentDependent)
                 {
-                    spell.dependent = cur_dependent;
+                    spell.dependent = currentDependent;
                     if (spell.state != PLAYERSPELL_NEW)
                         spell.state = PLAYERSPELL_CHANGED;
                 }
 
                 // now re-learn if need re-activate
-                if (cur_active && !spell.active && learn_low_rank)
+                if (currentActive && !spell.active && learnLowRank)
                 {
-                    if (AddSpell(prev_id, true, false, spell.dependent, spell.disabled))
+                    if (AddSpell(previousId, true, false, spell.dependent, spell.disabled))
                     {
                         // downgrade spell ranks in spellbook and action bar
                         WorldPacket data(SMSG_SUPERCEDED_SPELL, 4);
                         data << uint16(spellId);
-                        data << uint16(prev_id);
+                        data << uint16(previousId);
                         GetSession()->SendPacket(&data);
-                        prev_activate = true;
+                        previousActivated = true;
                     }
                 }
             }
@@ -4401,7 +4398,7 @@ void Player::RemoveSpell(uint32 spellId, bool disabled, bool learn_low_rank)
     }
 
     // remove from spell book if not replaced by lesser rank
-    if (!prev_activate)
+    if (!previousActivated)
         SendSpellRemoved(spellId);
 }
 
@@ -7213,7 +7210,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
 //If players are too far way of duel flag... then player loose the duel
 void Player::CheckDuelDistance(time_t currTime)
 {
-    if (!duel || duel->finished)
+    if (!m_duel || m_duel->finished)
         return;
 
     GameObject* obj = GetMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER));
@@ -7225,16 +7222,16 @@ void Player::CheckDuelDistance(time_t currTime)
     }
 
     bool inRange = true;
-    if (duel->transportGuid)
-        inRange = GetTransport() && GetTransport()->GetGUIDLow() == duel->transportGuid;
-    else if (!IsWithinDistInMap(obj, duel->outOfBound ? 70.0f : 75.0f))
+    if (m_duel->transportGuid)
+        inRange = GetTransport() && GetTransport()->GetGUIDLow() == m_duel->transportGuid;
+    else if (!IsWithinDistInMap(obj, m_duel->outOfBound ? 70.0f : 75.0f))
         inRange = false;
-    if (duel->outOfBound == 0)
+    if (m_duel->outOfBound == 0)
     {
         // Nostalrius : modification de la distance de duel (50 -> 75m)
         if (!inRange)
         {
-            duel->outOfBound = currTime;
+            m_duel->outOfBound = currTime;
 
             WorldPacket data(SMSG_DUEL_OUTOFBOUNDS, 0);
             GetSession()->SendPacket(&data);
@@ -7245,16 +7242,16 @@ void Player::CheckDuelDistance(time_t currTime)
         // Nostalrius : modification de la distance de duel
         if (inRange)
         {
-            duel->outOfBound = 0;
+            m_duel->outOfBound = 0;
 
             WorldPacket data(SMSG_DUEL_INBOUNDS, 0);
             GetSession()->SendPacket(&data);
         }
-        else if (currTime >= (duel->outOfBound + 10))
+        else if (currTime >= (m_duel->outOfBound + 10))
         {
             CombatStopWithPets(true);
-            if (duel->opponent)
-                duel->opponent->CombatStopWithPets(true);
+            if (m_duel->opponent)
+                m_duel->opponent->CombatStopWithPets(true);
 
             DuelComplete(DUEL_FLED);
         }
@@ -7270,30 +7267,30 @@ bool Player::IsOutdoorPvPActive() const
 void Player::DuelComplete(DuelCompleteType type)
 {
     // duel not requested
-    if (!duel || duel->finished)
+    if (!m_duel || m_duel->finished)
         return;
 
     WorldPacket data(SMSG_DUEL_COMPLETE, (1));
     data << (uint8)((type != DUEL_INTERRUPTED) ? 1 : 0);
     GetSession()->SendPacket(&data);
-    duel->opponent->GetSession()->SendPacket(&data);
+    m_duel->opponent->GetSession()->SendPacket(&data);
 
     if (type != DUEL_INTERRUPTED)
     {
         data.Initialize(SMSG_DUEL_WINNER, (1 + 20));        // we guess size
         data << (uint8)((type == DUEL_WON) ? 0 : 1);        // 0 = just won; 1 = fled
-        data << duel->opponent->GetName();
+        data << m_duel->opponent->GetName();
         data << GetName();
         SendObjectMessageToSet(&data, true);
     }
 
     //Remove Duel Flag object
     if (GameObject* obj = GetMap()->GetGameObject(GetGuidValue(PLAYER_DUEL_ARBITER)))
-        duel->initiator->RemoveGameObject(obj, true);
+        m_duel->initiator->RemoveGameObject(obj, true);
 
     /* remove auras */
     std::vector<uint32> auras2remove;
-    SpellAuraHolderMap const& vAuras = duel->opponent->GetSpellAuraHolderMap();
+    SpellAuraHolderMap const& vAuras = m_duel->opponent->GetSpellAuraHolderMap();
     for (const auto& itr : vAuras)
     {
         if (!itr.second->IsPositive() && 
@@ -7304,12 +7301,12 @@ void Player::DuelComplete(DuelCompleteType type)
 #else
             itr.second->GetCasterGuid() == GetObjectGuid() &&
 #endif
-            itr.second->GetAuraApplyTime() >= duel->startTime)
+            itr.second->GetAuraApplyTime() >= m_duel->startTime)
             auras2remove.push_back(itr.second->GetId());
     }
 
     for (uint32 i : auras2remove)
-        duel->opponent->RemoveAurasDueToSpell(i);
+        m_duel->opponent->RemoveAurasDueToSpell(i);
 
     auras2remove.clear();
     SpellAuraHolderMap const& auras = GetSpellAuraHolderMap();
@@ -7319,43 +7316,43 @@ void Player::DuelComplete(DuelCompleteType type)
             // World of Warcraft Client Patch 1.7.0 (2005-09-13)
             // - You are no longer able to kill players in duels with reflected DoT spells
 #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
-           (aura.second->GetCasterGuid() == duel->opponent->GetObjectGuid() || aura.second->IsReflected()) &&
+           (aura.second->GetCasterGuid() == m_duel->opponent->GetObjectGuid() || aura.second->IsReflected()) &&
 #else
-            aura.second->GetCasterGuid() == duel->opponent->GetObjectGuid() &&
+            aura.second->GetCasterGuid() == m_duel->opponent->GetObjectGuid() &&
 #endif
-            aura.second->GetAuraApplyTime() >= duel->startTime)
+            aura.second->GetAuraApplyTime() >= m_duel->startTime)
             auras2remove.push_back(aura.second->GetId());
     }
     for (uint32 i : auras2remove)
         RemoveAurasDueToSpell(i);
 
     // cleanup combo points
-    if (GetComboTargetGuid() == duel->opponent->GetObjectGuid())
+    if (GetComboTargetGuid() == m_duel->opponent->GetObjectGuid())
         ClearComboPoints();
-    else if (GetComboTargetGuid() == duel->opponent->GetPetGuid())
+    else if (GetComboTargetGuid() == m_duel->opponent->GetPetGuid())
         ClearComboPoints();
 
-    if (duel->opponent->GetComboTargetGuid() == GetObjectGuid())
-        duel->opponent->ClearComboPoints();
-    else if (duel->opponent->GetComboTargetGuid() == GetPetGuid())
-        duel->opponent->ClearComboPoints();
+    if (m_duel->opponent->GetComboTargetGuid() == GetObjectGuid())
+        m_duel->opponent->ClearComboPoints();
+    else if (m_duel->opponent->GetComboTargetGuid() == GetPetGuid())
+        m_duel->opponent->ClearComboPoints();
 
     // reset extraAttacks counter
     if (type != DUEL_INTERRUPTED)
     {
         ResetExtraAttacks();
-        duel->opponent->ResetExtraAttacks();
+        m_duel->opponent->ResetExtraAttacks();
     }
 
     //cleanups
     SetGuidValue(PLAYER_DUEL_ARBITER, ObjectGuid());
     SetUInt32Value(PLAYER_DUEL_TEAM, 0);
-    duel->opponent->SetGuidValue(PLAYER_DUEL_ARBITER, ObjectGuid());
-    duel->opponent->SetUInt32Value(PLAYER_DUEL_TEAM, 0);
+    m_duel->opponent->SetGuidValue(PLAYER_DUEL_ARBITER, ObjectGuid());
+    m_duel->opponent->SetUInt32Value(PLAYER_DUEL_TEAM, 0);
 
-    if (duel->opponent->duel)
-        duel->opponent->duel->finished = true;
-    duel->finished = true;
+    if (m_duel->opponent->m_duel)
+        m_duel->opponent->m_duel->finished = true;
+    m_duel->finished = true;
 }
 
 //---------------------------------------------------------//
@@ -16483,19 +16480,19 @@ void Player::SendSavedInstances() const
 }
 
 // convert the player's binds to the group
-void Player::ConvertInstancesToGroup(Player* player, Group* group, ObjectGuid player_guid)
+void Player::ConvertInstancesToGroup(Player* player, Group* group, ObjectGuid playerGuid)
 {
     bool has_binds = false;
     bool has_solo = false;
 
     if (player)
     {
-        player_guid = player->GetObjectGuid();
+        playerGuid = player->GetObjectGuid();
         if (!group)
             group = player->GetGroup();
     }
 
-    MANGOS_ASSERT(player_guid);
+    MANGOS_ASSERT(playerGuid);
 
     // copy all binds to the group, when changing leader it's assumed the character
     // will not have any solo binds
@@ -16522,15 +16519,15 @@ void Player::ConvertInstancesToGroup(Player* player, Group* group, ObjectGuid pl
         }
     }
 
-    uint32 player_lowguid = player_guid.GetCounter();
+    uint32 playerLowGuid = playerGuid.GetCounter();
 
     // if the player's not online we don't know what binds it has
     if (!player || !group || has_binds)
-        CharacterDatabase.PExecute("INSERT INTO `group_instance` SELECT `guid`, `instance`, `permanent` FROM `character_instance` WHERE `guid` = '%u'", player_lowguid);
+        CharacterDatabase.PExecute("INSERT INTO `group_instance` SELECT `guid`, `instance`, `permanent` FROM `character_instance` WHERE `guid` = '%u'", playerLowGuid);
 
     // the following should not get executed when changing leaders
     if (!player || has_solo)
-        CharacterDatabase.PExecute("DELETE FROM `character_instance` WHERE `guid` = '%u' AND `permanent` = 0", player_lowguid);
+        CharacterDatabase.PExecute("DELETE FROM `character_instance` WHERE `guid` = '%u' AND `permanent` = 0", playerLowGuid);
 }
 
 bool Player::_LoadHomeBind(std::unique_ptr<QueryResult> result)
@@ -17720,18 +17717,18 @@ bool Player::IsInInterFactionMode() const
 
 void Player::UpdateDuelFlag(time_t currTime)
 {
-    if (!duel || duel->finished || duel->startTimer == 0 || currTime < duel->startTimer + 3)
+    if (!m_duel || m_duel->finished || m_duel->startTimer == 0 || currTime < m_duel->startTimer + 3)
         return;
 
     SetUInt32Value(PLAYER_DUEL_TEAM, 1);
-    duel->opponent->SetUInt32Value(PLAYER_DUEL_TEAM, 2);
+    m_duel->opponent->SetUInt32Value(PLAYER_DUEL_TEAM, 2);
 
-    duel->startTimer = 0;
-    duel->startTime  = currTime;
-    if (duel->opponent->duel)
+    m_duel->startTimer = 0;
+    m_duel->startTime  = currTime;
+    if (m_duel->opponent->m_duel)
     {
-        duel->opponent->duel->startTimer = 0;
-        duel->opponent->duel->startTime  = currTime;
+        m_duel->opponent->m_duel->startTimer = 0;
+        m_duel->opponent->m_duel->startTime  = currTime;
     }
 }
 
@@ -18896,33 +18893,33 @@ void Player::SendRaidGroupOnlyError(uint32 timer, RaidGroupError error)
 void Player::UpdateHomebindTime(uint32 time)
 {
     // GMs never get homebind timer online
-    if (m_InstanceValid || IsGameMaster())
+    if (m_instanceValid || IsGameMaster())
     {
-        if (m_HomebindTimer)                                // instance valid, but timer not reset
+        if (m_homebindTimer)                                // instance valid, but timer not reset
         {
             // hide reminder
             SendRaidGroupOnlyError(0, ERR_RAID_GROUP_REQUIRED);
         }
         // instance is valid, reset homebind timer
-        m_HomebindTimer = 0;
+        m_homebindTimer = 0;
     }
-    else if (m_HomebindTimer > 0)
+    else if (m_homebindTimer > 0)
     {
-        if (time >= m_HomebindTimer)
+        if (time >= m_homebindTimer)
         {
             // teleport to homebind location
             TeleportToHomebind();
-            m_HomebindTimer = 0;
+            m_homebindTimer = 0;
         }
         else
-            m_HomebindTimer -= time;
+            m_homebindTimer -= time;
     }
     else
     {
         // instance is invalid, start homebind timer
-        m_HomebindTimer = 60000;
+        m_homebindTimer = 60000;
         // send message to player
-        SendRaidGroupOnlyError(m_HomebindTimer, ERR_RAID_GROUP_REQUIRED);
+        SendRaidGroupOnlyError(m_homebindTimer, ERR_RAID_GROUP_REQUIRED);
         sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "PLAYER: Player '%s' (GUID: %u) will be teleported to homebind in 60 seconds", GetName(), GetGUIDLow());
     }
 }
@@ -19743,7 +19740,7 @@ void Player::LearnQuestRewardedSpells()
 
 void Player::SetSemaphoreTeleportNear(bool semphsetting)
 {
-    mSemaphoreTeleport_Near = semphsetting;
+    m_semaphoreTeleportNear = semphsetting;
     if (!IsBeingTeleported())
     {
         m_teleportRecover = std::function<void()>();
@@ -19753,7 +19750,7 @@ void Player::SetSemaphoreTeleportNear(bool semphsetting)
 
 void Player::SetSemaphoreTeleportFar(bool semphsetting)
 {
-    mSemaphoreTeleport_Far = semphsetting;
+    m_semaphoreTeleportFar = semphsetting;
     if (!IsBeingTeleported())
     {
         m_teleportRecover = std::function<void()>();
@@ -21491,8 +21488,8 @@ void Player::SendDuelCountdown(uint32 counter) const
 
 void Player::RemoveAI()
 {
-    if (i_AI)
-        i_AI->Remove();
+    if (m_AI)
+        m_AI->Remove();
 }
 
 void Player::RemoveTemporaryAI()
@@ -21508,17 +21505,17 @@ void Player::RemoveTemporaryAI()
 
 void Player::SetControlledBy(Unit* pWho)
 {
-    if (i_AI)
+    if (m_AI)
     {
         PlayerBotEntry* pBot = GetSession()->GetBot();
 
         // Careful not to delete bot ai
-        if (!pBot || (pBot->ai.get() != i_AI))
-            delete i_AI;
+        if (!pBot || (pBot->ai.get() != m_AI))
+            delete m_AI;
 
-        i_AI = nullptr;
+        m_AI = nullptr;
     }
-    i_AI = new PlayerControlledAI(this, pWho);
+    m_AI = new PlayerControlledAI(this, pWho);
 }
 
 #define CHANGERACE_LOG(format, ...) sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "[RaceChanger/Log] " format, ##__VA_ARGS__)

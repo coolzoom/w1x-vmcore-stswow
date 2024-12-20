@@ -289,10 +289,7 @@ struct boss_maexxnaAI : public ScriptedAI
 
             // set immune anticheat and calculate speed
             if (Player* plr = pTarget->ToPlayer())
-            {
                 plr->SetLaunched(true);
-                plr->SetXYSpeed(horizontalSpeed);
-            }
 
             pTarget->KnockBack(angle, horizontalSpeed, verticalSpeed);
             wraps.push_back(std::make_pair(uint32(2000), pTarget->GetObjectGuid()));
