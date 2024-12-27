@@ -617,7 +617,6 @@ CreatureAI* GetAI_npc_colossus(Creature* pCreature)
 enum
 {
     GO_GLYPHED_CRYSTAL      = 180514,
-    GO_GLYPHED_CRYSTAL_BIG  = 210342
 };
 
 struct npc_Geologist_LarksbaneAI : public ScriptedAI
@@ -645,11 +644,11 @@ struct npc_Geologist_LarksbaneAI : public ScriptedAI
         m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
         m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
 
-        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL, -6826.51f, 809.082f, 51.8577f, 0.259445f))
+        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL, -6825.29f, 809.125f, 51.8699f, 0.349065f, 0, 0, 0.173648f, 0.984808f))
             lCrystalGUIDs.push_back(pGo->GetGUID());
-        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL, -6827.54f, 806.711f, 51.9809f, 2.2241f))
+        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL, -6822.21f, 808.584f, 51.5885f, 2.77507f, 0, 0, 0.983254f, 0.182238f))
             lCrystalGUIDs.push_back(pGo->GetGUID());
-        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL_BIG, -6825.31f, 805.146f, 51.9435f, -1.255528f))
+        if (GameObject* pGo = m_creature->SummonGameObject(GO_GLYPHED_CRYSTAL, -6823.57f, 811.977f, 51.4426f, 4.41568f, 0, 0, -0.803857f, 0.594823f))
             lCrystalGUIDs.push_back(pGo->GetGUID());
 
         uiCurrAction = 1;
