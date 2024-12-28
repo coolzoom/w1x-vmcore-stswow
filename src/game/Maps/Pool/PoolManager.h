@@ -193,6 +193,7 @@ class PoolManager
         // used for calling from global systems when need spawn pool in all appropriate map instances
         void SpawnPoolInMaps(uint16 pool_id, bool instantly);
         void DespawnPoolInMaps(uint16 pool_id);
+        uint32 GetContinentInstanceIdForPool(uint16 pool_id) const;
 
         // used for calling from global systems when need initialize spawn pool state in appropriate (possible) map persistent state
         void InitSpawnPool(MapPersistentState& mapState, uint16 pool_id);

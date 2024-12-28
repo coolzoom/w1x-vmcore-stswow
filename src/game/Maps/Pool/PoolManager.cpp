@@ -859,16 +859,6 @@ void PoolManager::LoadFromDB()
                 continue;
             }
 
-            GameObjectInfo const* goinfo = ObjectMgr::GetGameObjectInfo(data->id);
-            if (goinfo->type != GAMEOBJECT_TYPE_CHEST &&
-                    goinfo->type != GAMEOBJECT_TYPE_GOOBER &&
-                    goinfo->type != GAMEOBJECT_TYPE_FISHINGHOLE &&
-                    goinfo->type != GAMEOBJECT_TYPE_SPELL_FOCUS)
-            {
-                sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "`%s` has a not lootable gameobject spawn (GUID: %u, type: %u) defined for pool id (%u), skipped.", table, guid, goinfo->type, pool_id);
-                continue;
-            }
-
             // `pool_gameobject` and `pool_gameobject_template` can't have guids duplicates (in second case because entries also unique)
             // So if guid already listed in pools then this duplicate from alt.table
             // Also note: for added guid not important what case we skip from 2 tables
@@ -1009,7 +999,6 @@ void PoolManager::LoadFromDB()
         sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">> Loaded %u pools in mother pools", count);
     }
 
-    // check chances integrity
     for (uint16 pool_entry = 0; pool_entry < m_poolTemplate.size(); ++pool_entry)
     {
         if (m_poolTemplate[pool_entry].MaxLimit &&
@@ -1020,6 +1009,15 @@ void PoolManager::LoadFromDB()
             sLog.Out(LOG_DBERROR, LOG_LVL_ERROR, "Pool Id (%u) is empty.", pool_entry);
         }
 
+        if (!m_poolTemplate[pool_entry].InstanceId &&
+            m_poolTemplate[pool_entry].mapEntry &&
+            m_poolTemplate[pool_entry].mapEntry->IsContinent() &&
+            sWorld.getConfig(CONFIG_BOOL_CONTINENTS_INSTANCIATE))
+        {
+            m_poolTemplate[pool_entry].InstanceId = GetContinentInstanceIdForPool(pool_entry);
+        }
+
+        // check chances integrity
         if (m_poolTemplate[pool_entry].IsAutoSpawn())
         {
             if (!CheckPool(pool_entry))
@@ -1029,6 +1027,54 @@ void PoolManager::LoadFromDB()
             }
         }
     }
+}
+
+// goes through the spawns in the pool to figure out on which continent instance to spawn the pool
+uint32 PoolManager::GetContinentInstanceIdForPool(uint16 pool_id) const
+{
+    if (!m_poolGameObjectGroups[pool_id].isEmpty())
+    {
+        for (auto const& itr : m_poolGameObjectGroups[pool_id].GetEqualChanced())
+        {
+            if (GameObjectData const* data = sObjectMgr.GetGOData(itr.guid))
+            {
+                if (data->position.mapId <= MAX_CONTINENT_ID)
+                    return sMapMgr.GetContinentInstanceId(data->position.mapId, data->position.x, data->position.y);
+            }
+        }
+
+        for (auto const& itr : m_poolGameObjectGroups[pool_id].GetExplicitlyChanced())
+        {
+            if (GameObjectData const* data = sObjectMgr.GetGOData(itr.guid))
+            {
+                if (data->position.mapId <= MAX_CONTINENT_ID)
+                    return sMapMgr.GetContinentInstanceId(data->position.mapId, data->position.x, data->position.y);
+            }
+        }
+    }
+
+    if (!m_poolCreatureGroups[pool_id].isEmpty())
+    {
+        for (auto const& itr : m_poolCreatureGroups[pool_id].GetEqualChanced())
+        {
+            if (CreatureData const* data = sObjectMgr.GetCreatureData(itr.guid))
+            {
+                if (data->position.mapId <= MAX_CONTINENT_ID)
+                    return sMapMgr.GetContinentInstanceId(data->position.mapId, data->position.x, data->position.y);
+            }
+        }
+
+        for (auto const& itr : m_poolCreatureGroups[pool_id].GetExplicitlyChanced())
+        {
+            if (CreatureData const* data = sObjectMgr.GetCreatureData(itr.guid))
+            {
+                if (data->position.mapId <= MAX_CONTINENT_ID)
+                    return sMapMgr.GetContinentInstanceId(data->position.mapId, data->position.x, data->position.y);
+            }
+        }
+    }
+
+    return 0;
 }
 
 // The initialize method will spawn all pools not in an event and not in another pool

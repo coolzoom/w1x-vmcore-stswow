@@ -59,6 +59,7 @@ class TargetedMovementGeneratorMedium
 
         void UnitSpeedChanged() { m_bRecalculateTravel=true; }
         void UpdateFinalDistance(float fDistance);
+        bool IsFarEnoughToMoveStationaryFollower(T&) const;
 
     protected:
         void _setTargetLocation(T &);

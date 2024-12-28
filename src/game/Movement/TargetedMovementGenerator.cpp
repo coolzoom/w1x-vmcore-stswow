@@ -32,6 +32,12 @@
 
 //-----------------------------------------------//
 template<class T, typename D>
+bool TargetedMovementGeneratorMedium<T, D>::IsFarEnoughToMoveStationaryFollower(T &owner) const
+{
+    return !i_target->IsWithinDist(&owner, 1.4f * m_fOffset);
+}
+
+template<class T, typename D>
 void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
 {
     // Note: Any method that accesses the target's movespline here must be
@@ -93,7 +99,7 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
         }
     }
     // prevent redundant micro-movement for pets, other followers.
-    else if (!i_target->IsMoving() && owner.movespline->Finalized() && i_target->IsWithinDistInMap(&owner, 1.4f * m_fOffset))
+    else if (!i_target->IsMoving() && owner.movespline->Finalized() && !IsFarEnoughToMoveStationaryFollower(owner))
     {
         return;
     }
@@ -660,7 +666,7 @@ bool FollowMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
 
             // Follow movement may be interrupted
             if (!targetMoved && owner.movespline->Finalized())
-                targetMoved = !owner.IsWithinDist3d(dest.x, dest.y, dest.z, m_fOffset + i_target->GetObjectBoundingRadius() + 0.5f); 
+                targetMoved = this->IsFarEnoughToMoveStationaryFollower(owner);
 
             if (targetMoved)
             {
@@ -799,6 +805,10 @@ template void TargetedMovementGeneratorMedium<Player, ChaseMovementGenerator<Pla
 template void TargetedMovementGeneratorMedium<Player, FollowMovementGenerator<Player> >::UpdateAsync(Player &, uint32);
 template void TargetedMovementGeneratorMedium<Creature, ChaseMovementGenerator<Creature> >::UpdateAsync(Creature &, uint32);
 template void TargetedMovementGeneratorMedium<Creature, FollowMovementGenerator<Creature> >::UpdateAsync(Creature &, uint32);
+template bool TargetedMovementGeneratorMedium<Player, ChaseMovementGenerator<Player> >::IsFarEnoughToMoveStationaryFollower(Player &) const;
+template bool TargetedMovementGeneratorMedium<Player, FollowMovementGenerator<Player> >::IsFarEnoughToMoveStationaryFollower(Player &) const;
+template bool TargetedMovementGeneratorMedium<Creature, ChaseMovementGenerator<Creature> >::IsFarEnoughToMoveStationaryFollower(Creature &) const;
+template bool TargetedMovementGeneratorMedium<Creature, FollowMovementGenerator<Creature> >::IsFarEnoughToMoveStationaryFollower(Creature &) const;
 
 template bool ChaseMovementGenerator<Player>::Update(Player &, uint32 const&);
 template bool ChaseMovementGenerator<Creature>::Update(Creature &, uint32 const&);
