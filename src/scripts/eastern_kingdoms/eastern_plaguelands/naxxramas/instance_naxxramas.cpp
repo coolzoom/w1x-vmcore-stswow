@@ -565,7 +565,6 @@ void instance_naxxramas::OnObjectCreate(GameObject* pGo)
         case GO_PLAG_HEIG_ENTRY_DOOR:
             UpdateAutomaticBossEntranceDoor(pGo, m_auiEncounter[TYPE_HEIGAN]);
             break;
-        case GO_PLAG_HEIG_EXIT_DOOR:
         case GO_PLAG_HEIG_OLD_EXIT_DOOR:
         case GO_PLAG_LOAT_DOOR:
             UpdateBossGate(pGo, m_auiEncounter[TYPE_HEIGAN]);

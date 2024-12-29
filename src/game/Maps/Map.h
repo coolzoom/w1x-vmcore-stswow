@@ -500,6 +500,7 @@ class Map : public GridRefManager<NGridType>
         Creature* SummonCreature(uint32 entry, float x, float y, float z, float ang, TempSummonType spwtype = TEMPSUMMON_DEAD_DESPAWN, uint32 despwtime = 25000, bool asActiveObject = false);
         Creature* LoadCreatureSpawn(uint32 dbGuid, bool delaySpawn = false);
         Creature* LoadCreatureSpawnWithGroup(uint32 leaderDbGuid, bool delaySpawn = false);
+        GameObject* LoadGameObjectSpawn(uint32 dbGuid, bool delaySpawn = false);
 
         Player* GetPlayer(ObjectGuid guid);
         GameObject* GetGameObject(ObjectGuid const& guid) { return GetObject<GameObject>(guid); }

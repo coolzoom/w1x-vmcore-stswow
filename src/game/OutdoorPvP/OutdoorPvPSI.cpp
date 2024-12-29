@@ -88,6 +88,51 @@ void OutdoorPvPSI::OnPlayerLeave(Player* plr)
     OutdoorPvP::OnPlayerLeave(plr);
 }
 
+static std::vector<uint32> const sAllianceDustBags = { 9496, 9497, 9498, 9499, 9500, 9501, 9502, 9503, 9504, 9507, 9508 };
+static std::vector<uint32> const sHordeDustBags = { 13566, 13567, 13568, 13582, 13583, 13584, 13585, 13587, 13588, 13589, 13590, 13591 };
+
+void OutdoorPvPSI::SpawnDustBags(uint32 resource, std::vector<uint32> const& allBags, std::set<uint32>& spawnedBags)
+{
+    uint32 neededBags = resource / 15;
+    if (neededBags > spawnedBags.size())
+    {
+        for (auto const& dbGuid : allBags)
+        {
+            if (spawnedBags.find(dbGuid) == spawnedBags.end())
+            {
+                if (GetMap()->LoadGameObjectSpawn(dbGuid))
+                {
+                    spawnedBags.insert(dbGuid);
+                    if (spawnedBags.size() >= neededBags)
+                        break;
+                }
+            }
+        }
+    }
+}
+
+void OutdoorPvPSI::ResetResourceCount()
+{
+    m_Gathered_A = 0;
+    m_Gathered_H = 0;
+
+    for (auto const& dbGuid : m_allianceDustBags)
+    {
+        ObjectGuid guid = ObjectGuid(HIGHGUID_GAMEOBJECT, SI_DUST_BAG, dbGuid);
+        if (GameObject* pGo = GetMap()->GetGameObject(guid))
+            pGo->AddObjectToRemoveList();
+    }
+    m_allianceDustBags.clear();
+
+    for (auto const& dbGuid : m_hordeDustBags)
+    {
+        ObjectGuid guid = ObjectGuid(HIGHGUID_GAMEOBJECT, SI_DUST_BAG, dbGuid);
+        if (GameObject* pGo = GetMap()->GetGameObject(guid))
+            pGo->AddObjectToRemoveList();
+    }
+    m_hordeDustBags.clear();
+}
+
 bool OutdoorPvPSI::HandleAreaTrigger(Player* plr, uint32 trigger)
 {
     /** If the player doesn't have a silithyst */
@@ -109,11 +154,14 @@ bool OutdoorPvPSI::HandleAreaTrigger(Player* plr, uint32 trigger)
                     TeamApplyBuff(TEAM_ALLIANCE, SI_CENARION_FAVOR);
                     sWorld.SendZoneText(OutdoorPvPSIBuffZones[0], sObjectMgr.GetMangosStringForDBCLocale(LANG_OPVP_SI_CAPTURE_A));
                     m_LastController = ALLIANCE;
-                    m_Gathered_A = 0;
-                    m_Gathered_H = 0;
+                    ResetResourceCount();
                     sLog.Out(LOG_BG, LOG_LVL_DETAIL, "[Silithus] Under Alliance control");
                     //sGameEventMgr.SetSilithusPVPEventCompleted(true);
                     //sGameEventMgr.UpdateSilithusPVP();
+                }
+                else
+                {
+                    SpawnDustBags(m_Gathered_A, sAllianceDustBags, m_allianceDustBags);
                 }
                 // complete quest
                 plr->KilledMonsterCredit(SI_TURNIN_QUEST_CM_A, ObjectGuid());
@@ -130,11 +178,14 @@ bool OutdoorPvPSI::HandleAreaTrigger(Player* plr, uint32 trigger)
                     TeamApplyBuff(TEAM_HORDE, SI_CENARION_FAVOR);
                     sWorld.SendZoneText(OutdoorPvPSIBuffZones[0], sObjectMgr.GetMangosStringForDBCLocale(LANG_OPVP_SI_CAPTURE_H));
                     m_LastController = HORDE;
-                    m_Gathered_A = 0;
-                    m_Gathered_H = 0;
+                    ResetResourceCount();
                     sLog.Out(LOG_BG, LOG_LVL_DETAIL, "[Silithus] Under Horde control");
                     //sGameEventMgr.SetSilithusPVPEventCompleted(true);
                     //sGameEventMgr.UpdateSilithusPVP();
+                }
+                else
+                {
+                    SpawnDustBags(m_Gathered_H, sHordeDustBags, m_hordeDustBags);
                 }
                 // complete quest
                 plr->KilledMonsterCredit(SI_TURNIN_QUEST_CM_H, ObjectGuid());

@@ -3740,3 +3740,40 @@ Creature* Map::LoadCreatureSpawnWithGroup(uint32 leaderDbGuid, bool delaySpawn)
 
     return pLeader;
 }
+
+GameObject* Map::LoadGameObjectSpawn(uint32 dbGuid, bool delaySpawn)
+{
+    GameObjectData const* pSpawnData = sObjectMgr.GetGOData(dbGuid);
+    if (!pSpawnData)
+        return nullptr;
+
+    if (GetId() != pSpawnData->position.mapId)
+    {
+        sLog.Out(LOG_SCRIPTS, LOG_LVL_ERROR, "Attempt to load gameobject spawn guid %u on wrong map %u.", dbGuid, GetId());
+        return nullptr;
+    }
+
+    GameObject* pGameObject;
+    if (pGameObject = GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, pSpawnData->id, dbGuid)))
+        return pGameObject;
+
+    if (!IsLoaded(pSpawnData->position.x, pSpawnData->position.y))
+        return nullptr;
+
+    pGameObject = GameObject::CreateGameObject(pSpawnData->id);
+    if (!pGameObject->LoadFromDB(dbGuid, this, true))
+    {
+        delete pGameObject;
+        return nullptr;
+    }
+    
+    if (delaySpawn)
+    {
+        pGameObject->SetRespawnTime(pGameObject->GetRespawnDelay());
+        if (sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATELY))
+            pGameObject->SaveRespawnTime();
+    }
+
+    Add(pGameObject);
+    return pGameObject;
+}
