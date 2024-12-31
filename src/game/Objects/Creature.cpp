@@ -1995,29 +1995,34 @@ void Creature::LoadDefaultEquipment(GameEventCreatureData const* eventData)
     }
     else
     {
+        // use default from the template
+        LoadEquipment(m_creatureInfo->equipment_id, true);
+
+        // loot can override the default equipment
         if (HasStaticFlag(CREATURE_STATIC_FLAG_CAN_WIELD_LOOT))
         {
-            LoadEquipment(0, true);
             GenerateLootForBody(nullptr, nullptr);
             
-            bool usingLoot = false;
+            bool hasMainHand = false;
+            bool hasOffHand = false;
+            bool hasRanged = false;
             for (auto const& itr : loot.items)
             {
                 if (ItemPrototype const* pItem = sObjectMgr.GetItemPrototype(itr.itemid))
                 {
-                    if (!GetVirtualItemDisplayId(BASE_ATTACK))
+                    if (!hasMainHand)
                     {
                         if (pItem->InventoryType == INVTYPE_WEAPON ||
                             pItem->InventoryType == INVTYPE_WEAPONMAINHAND ||
                             pItem->InventoryType == INVTYPE_2HWEAPON && !GetVirtualItemDisplayId(OFF_ATTACK))
                         {
                             SetVirtualItem(BASE_ATTACK, itr.itemid);
-                            usingLoot = true;
+                            hasMainHand = true;
                             continue;
                         }
                     }
 
-                    if (!GetVirtualItemDisplayId(OFF_ATTACK) && GetVirtualItemInventoryType(BASE_ATTACK) != INVTYPE_2HWEAPON)
+                    if (!hasOffHand && GetVirtualItemInventoryType(BASE_ATTACK) != INVTYPE_2HWEAPON)
                     {
                         if (pItem->InventoryType == INVTYPE_WEAPON ||
                             pItem->InventoryType == INVTYPE_WEAPONOFFHAND ||
@@ -2025,26 +2030,20 @@ void Creature::LoadDefaultEquipment(GameEventCreatureData const* eventData)
                             pItem->InventoryType == INVTYPE_HOLDABLE)
                         {
                             SetVirtualItem(OFF_ATTACK, itr.itemid);
-                            usingLoot = true;
+                            hasOffHand = true;
                             continue;
                         }
                     }
 
-                    if (!GetVirtualItemDisplayId(RANGED_ATTACK) && pItem->IsRangedWeapon())
+                    if (!hasRanged && pItem->IsRangedWeapon())
                     {
                         SetVirtualItem(RANGED_ATTACK, itr.itemid);
-                        usingLoot = true;
+                        hasRanged = true;
                         continue;
                     }
                 }
             }
-
-            if (usingLoot)
-                return;
         }
-
-        // use default from the template
-        LoadEquipment(m_creatureInfo->equipment_id, true);
     }
 }
 
