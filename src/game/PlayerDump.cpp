@@ -675,15 +675,15 @@ DumpReturn PlayerDumpReader::LoadDump(std::string const& file, uint32 account, s
     CharacterDatabase.CommitTransaction();
 
     //FIXME: current code with post-updating guids not safe for future per-map threads
-    uint64 newMaxItemGuid = sObjectMgr.m_ItemGuids.GetNextAfterMaxUsed() + items.size();
+    uint64 newMaxItemGuid = sObjectMgr.m_ItemGuids.GetNextAfterMaxUsed() + uint64(items.size());
     MANGOS_ASSERT(newMaxItemGuid < UINT32_MAX);
     sObjectMgr.m_ItemGuids.SetMaxUsedGuid(newMaxItemGuid, "Item");
     
-    uint32 newMaxMailId = sObjectMgr.m_MailIds.GetNextAfterMaxUsed() + mails.size();
+    uint64 newMaxMailId = sObjectMgr.m_MailIds.GetNextAfterMaxUsed() + uint64(mails.size());
     MANGOS_ASSERT(newMaxMailId < UINT32_MAX);
     sObjectMgr.m_MailIds.SetMaxUsedGuid(newMaxMailId, "Mail");
 
-    uint32 newMaxItemTextId = sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed() + itemTexts.size();
+    uint64 newMaxItemTextId = sObjectMgr.m_ItemTextIds.GetNextAfterMaxUsed() + uint64(itemTexts.size());
     MANGOS_ASSERT(newMaxItemTextId < UINT32_MAX);
     sObjectMgr.m_ItemTextIds.SetMaxUsedGuid(newMaxItemTextId, "Item Text");
 

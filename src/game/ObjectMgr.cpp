@@ -136,6 +136,9 @@ void IdGenerator<T>::SetMaxUsedGuid(T val, char const* guidType)
 template uint32 IdGenerator<uint32>::Generate();
 template uint64 IdGenerator<uint64>::Generate();
 
+template void IdGenerator<uint32>::SetMaxUsedGuid(uint32, char const*);
+template void IdGenerator<uint64>::SetMaxUsedGuid(uint64, char const*);
+
 ObjectMgr::ObjectMgr() :
     m_GuildIds("Guild ids"),
     m_MailIds("Mail ids"),
@@ -9464,7 +9467,7 @@ void ObjectMgr::LoadBroadcastTexts()
         {
             if (!sEmotesStore.LookupEntry(bct.emoteId1))
             {
-                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BroadcastText (Id: %u) in table `broadcast_text` has emoteId2 %u but emote does not exist.", bct.entry, bct.emoteId1);
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BroadcastText (Id: %u) in table `broadcast_text` has EmoteId2 %u but emote does not exist.", bct.entry, bct.emoteId1);
                 bct.emoteId1 = 0;
             }
         }
@@ -9473,7 +9476,7 @@ void ObjectMgr::LoadBroadcastTexts()
         {
             if (!sEmotesStore.LookupEntry(bct.emoteId2))
             {
-                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BroadcastText (Id: %u) in table `broadcast_text` has emoteId3 %u but emote does not exist.", bct.entry, bct.emoteId2);
+                sLog.Out(LOG_DBERROR, LOG_LVL_MINIMAL, "BroadcastText (Id: %u) in table `broadcast_text` has EmoteId3 %u but emote does not exist.", bct.entry, bct.emoteId2);
                 bct.emoteId2 = 0;
             }
         }
