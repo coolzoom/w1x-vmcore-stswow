@@ -133,8 +133,8 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
       m_objUpdatesThreads(0), m_unitRelocationThreads(0), m_lastPlayerLeftTime(0),
       m_lastMvtSpellsUpdate(0), m_bonesCleanupTimer(0), m_uiScriptedEventsTimer(1000)
 {
-    m_CreatureGuids.Set(sObjectMgr.GetFirstTemporaryCreatureLowGuid());
-    m_GameObjectGuids.Set(sObjectMgr.GetFirstTemporaryGameObjectLowGuid());
+    m_CreatureGuids.SetMaxUsedGuid(sObjectMgr.GetFirstTemporaryCreatureLowGuid(), "Creature");
+    m_GameObjectGuids.SetMaxUsedGuid(sObjectMgr.GetFirstTemporaryGameObjectLowGuid(), "GameObject");
 
     for (uint32 j = 0; j < MAX_NUMBER_OF_GRIDS; ++j)
     {

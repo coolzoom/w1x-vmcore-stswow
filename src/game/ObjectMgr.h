@@ -400,7 +400,7 @@ class IdGenerator
         explicit IdGenerator(char const* _name) : m_name(_name), m_nextGuid(1) {}
 
     public:                                                 // modifiers
-        void Set(T val) { m_nextGuid = val; }
+        void SetMaxUsedGuid(T val, char const* guidType);
         T Generate();
 
     public:                                                 // accessors
