@@ -3797,9 +3797,9 @@ SpellCastResult Spell::prepare(Aura* triggeredByAura, uint32 chance)
         if (channeled && m_casterUnit)
         {
             // Prevent animation from disappearing if casting another channel too soon after previous ends
-            if (m_casterUnit->HasUnitState(UNIT_STAT_PENDING_CHANNEL_RESET))
+            if (m_casterUnit->HasUnitState(UNIT_STATE_PENDING_CHANNEL_RESET))
             {
-                m_casterUnit->ClearUnitState(UNIT_STAT_PENDING_CHANNEL_RESET);
+                m_casterUnit->ClearUnitState(UNIT_STATE_PENDING_CHANNEL_RESET);
                 m_casterUnit->CancelSpellChannelingAnimationInstantly();
             }
 
@@ -3966,7 +3966,7 @@ void Spell::cast(bool skipCheck)
     if (m_casterUnit)
     {
         // Ivina <Nostalrius> : Added the case when caster is charmed and not controlled.
-        if ((!m_caster->IsPlayer()) || ((m_casterUnit->GetCharmerGuid()) && (!m_casterUnit->HasUnitState(UNIT_STAT_POSSESSED))))
+        if ((!m_caster->IsPlayer()) || ((m_casterUnit->GetCharmerGuid()) && (!m_casterUnit->HasUnitState(UNIT_STATE_POSSESSED))))
         {
             if (m_targets.getUnitTarget() && m_targets.getUnitTarget() != m_caster)
                 m_casterUnit->SetInFront(m_targets.getUnitTarget());
@@ -4507,9 +4507,9 @@ void Spell::update(uint32 difftime)
                 // check for incapacitating states
                 if (m_casterUnit && m_casterUnit->IsPlayer())
                 {
-                    uint32 interruptStates = (UNIT_STAT_FEIGN_DEATH | UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING);
+                    uint32 interruptStates = (UNIT_STATE_FEIGN_DEATH | UNIT_STATE_CONFUSED | UNIT_STATE_FLEEING);
                     if (m_spellInfo->HasSpellInterruptFlag(SPELL_INTERRUPT_FLAG_STUN))
-                        interruptStates |= UNIT_STAT_STUNNED;
+                        interruptStates |= UNIT_STATE_STUNNED;
                     if (m_casterUnit->HasUnitState(interruptStates))
                         cancel();
                 }
@@ -4537,12 +4537,12 @@ void Spell::update(uint32 difftime)
                 if (m_caster->IsPlayer() || m_caster->IsPet())
                 {
                     // check for incapacitating player states
-                    if (m_casterUnit->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+                    if (m_casterUnit->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
                     {
-                        if (m_casterUnit->HasUnitState(UNIT_STAT_FEIGN_DEATH) ||
-                           (m_casterUnit->HasUnitState(UNIT_STAT_STUNNED) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_STUN))) ||
-                           (m_casterUnit->HasUnitState(UNIT_STAT_CONFUSED) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_CONFUSE))) ||
-                           (m_casterUnit->HasUnitState(UNIT_STAT_FLEEING) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_FEAR))))
+                        if (m_casterUnit->HasUnitState(UNIT_STATE_FEIGN_DEATH) ||
+                           (m_casterUnit->HasUnitState(UNIT_STATE_STUNNED) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_STUN))) ||
+                           (m_casterUnit->HasUnitState(UNIT_STATE_CONFUSED) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_CONFUSE))) ||
+                           (m_casterUnit->HasUnitState(UNIT_STATE_FLEEING) && !(m_channeled && m_spellInfo->HasAura(SPELL_AURA_MOD_FEAR))))
                             cancel();
                     }
                 }
@@ -5309,7 +5309,7 @@ void Spell::SendChannelUpdate(uint32 time, bool interrupted)
 
             if (possessed)
             {
-                possessed->ClearUnitState(UNIT_STAT_POSSESSED);
+                possessed->ClearUnitState(UNIT_STATE_POSSESSED);
                 possessed->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
                 possessed->SetCharmerGuid(ObjectGuid());
                 // TODO - Requires more specials for target?
@@ -6313,7 +6313,7 @@ SpellCastResult Spell::CheckCast(bool strict)
             if (castResult != SPELL_CAST_OK)
                 return castResult;
 
-            if (m_casterUnit->HasUnitState(UNIT_STAT_POSSESSED))
+            if (m_casterUnit->HasUnitState(UNIT_STATE_POSSESSED))
             {
                 if (m_spellInfo->Category == 21) // Enrage
                     return SPELL_FAILED_NOT_READY;
@@ -6572,7 +6572,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (!m_casterUnit)
                     return SPELL_FAILED_DONT_REPORT;
 
-                if (m_casterUnit->HasUnitState(UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT) ||
+                if (m_casterUnit->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT) ||
                     m_casterUnit->IsPlayer() && static_cast<Player*>(m_casterUnit)->IsBeingTeleported())
                     return SPELL_FAILED_ROOTED;
 
@@ -9018,10 +9018,10 @@ bool ChannelResetEvent::Execute(uint64 e_time, uint32)
 
 void ChannelResetEvent::Abort(uint64 e_time)
 {
-    if (!m_caster->HasUnitState(UNIT_STAT_PENDING_CHANNEL_RESET))
+    if (!m_caster->HasUnitState(UNIT_STATE_PENDING_CHANNEL_RESET))
         return;
 
-    m_caster->ClearUnitState(UNIT_STAT_PENDING_CHANNEL_RESET);
+    m_caster->ClearUnitState(UNIT_STATE_PENDING_CHANNEL_RESET);
 
     Spell* currSpell = m_caster->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
     if (!currSpell || currSpell->getState() == SPELL_STATE_FINISHED)

@@ -380,7 +380,7 @@ struct cthunTentacle : public ScriptedAI
 
     void Reset() override
     {
-        m_creature->AddUnitState(UNIT_STAT_ROOT);
+        m_creature->AddUnitState(UNIT_STATE_ROOT);
         m_creature->StopMoving();
         m_creature->SetRooted(true);
         m_creature->SetInCombatWithZone();
@@ -414,7 +414,7 @@ struct cthunTentacle : public ScriptedAI
 
         // This makes the mob behave like frostnovaed mobs etc, that is,
         // retargetting another top-threat target if current leaves melee range
-        m_creature->AddUnitState(UNIT_STAT_ROOT);
+        m_creature->AddUnitState(UNIT_STATE_ROOT);
         m_creature->StopMoving();
         m_creature->SetRooted(true);
         return true;
@@ -493,7 +493,7 @@ struct cthunTentacle : public ScriptedAI
         if (target)
         {
             // Nostalrius : Correction bug sheep/fear
-            if (!m_creature->HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED | UNIT_STAT_FEIGN_DEATH | UNIT_STAT_CONFUSED | UNIT_STAT_FLEEING) 
+            if (!m_creature->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED | UNIT_STATE_FEIGN_DEATH | UNIT_STATE_CONFUSED | UNIT_STATE_FLEEING) 
                 && (!m_creature->HasAuraType(SPELL_AURA_MOD_FEAR) || m_creature->HasAuraType(SPELL_AURA_PREVENTS_FLEEING)) && !m_creature->HasAuraType(SPELL_AURA_MOD_CONFUSE))
             {
                 m_creature->SetInFront(target);

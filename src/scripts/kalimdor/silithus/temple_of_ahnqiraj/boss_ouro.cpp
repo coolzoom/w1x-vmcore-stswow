@@ -111,7 +111,7 @@ struct boss_ouroAI : public ScriptedAI
     {
         // This makes the mob behave like rooted mobs etc, that is,
         // retargetting another top-threat target if current leaves melee range
-        m_creature->AddUnitState(UNIT_STAT_ROOT);
+        m_creature->AddUnitState(UNIT_STATE_ROOT);
         m_creature->StopMoving();
         m_creature->SetRooted(true);
         
@@ -229,12 +229,12 @@ struct boss_ouroAI : public ScriptedAI
         // This is to let Ouro reset when he enters evade mode. Because rooted mobs don't reset when they evade until their root is removed.
         if (m_creature->IsInEvadeMode())
         {
-            m_creature->ClearUnitState(UNIT_STAT_ROOT);
+            m_creature->ClearUnitState(UNIT_STATE_ROOT);
             m_creature->SetRooted(false);
         }
         else
         {
-            m_creature->AddUnitState(UNIT_STAT_ROOT);
+            m_creature->AddUnitState(UNIT_STATE_ROOT);
             m_creature->StopMoving();
             m_creature->SetRooted(true);
         }

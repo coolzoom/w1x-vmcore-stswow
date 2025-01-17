@@ -183,7 +183,7 @@ void MageOrgrimmarAttackerAI::UpdateAI(uint32 const diff)
     if (me->IsSpellReady(SPELL_FROST_NOVA) && me->GetPower(POWER_MANA) > 50)
         if (nearTarget)
             me->CastSpell(me, SPELL_FROST_NOVA, false);
-    if (nearTarget && target->HasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    if (nearTarget && target->HasUnitState(UNIT_STATE_CAN_NOT_MOVE))
     {
         // already runing
         if (!me->movespline->Finalized())

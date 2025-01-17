@@ -227,7 +227,7 @@ void Spell::EffectResurrectNew(SpellEffectIndex effIdx)
         pet->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
         pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
         pet->SetDeathState(ALIVE);
-        pet->ClearUnitState(UNIT_STAT_ALL_DYN_STATES);
+        pet->ClearUnitState(UNIT_STATE_ALL_DYN_STATES);
         pet->SetHealth(pet->GetMaxHealth() > health ? health : pet->GetMaxHealth());
 
         pet->AIM_Initialize();
@@ -520,7 +520,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                 else if (m_spellInfo->SpellIconID == 561)
                 {
                     // base damage halved if target not stunned.
-                    if (!unitTarget->HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED))
+                    if (!unitTarget->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED))
                         damage = damage * 0.5f;
 
                     damage = m_caster->SpellDamageBonusDone(unitTarget, m_spellInfo, effect_idx, damage, SPELL_DIRECT_DAMAGE);
@@ -1473,7 +1473,7 @@ void Spell::EffectDummy(SpellEffectIndex effIdx)
                     //m_casterUnit->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FEING_DEATH);
                     m_casterUnit->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SPAWNING);
                     m_casterUnit->SetFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_DEAD);
-                    m_casterUnit->AddUnitState(UNIT_STAT_FEIGN_DEATH);
+                    m_casterUnit->AddUnitState(UNIT_STATE_FEIGN_DEATH);
 
                     // Summon globs
                     m_casterUnit->CastSpell(m_casterUnit, 25885, true);
@@ -3377,11 +3377,11 @@ void Spell::EffectDistract(SpellEffectIndex effIdx)
         return;
 
     // target must be OK to do this
-    if (unitTarget->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (unitTarget->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
         return;
 
     unitTarget->SetFacingTo(unitTarget->GetAngle(m_targets.m_destX, m_targets.m_destY));
-    unitTarget->ClearUnitState(UNIT_STAT_MOVING);
+    unitTarget->ClearUnitState(UNIT_STATE_MOVING);
 
     if (unitTarget->GetTypeId() == TYPEID_UNIT)
         unitTarget->GetMotionMaster()->MoveDistract(damage * IN_MILLISECONDS);
@@ -6553,7 +6553,7 @@ void Spell::EffectSummonDeadPet(SpellEffectIndex /*effIdx*/)
     pet->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
     pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
     pet->SetDeathState(ALIVE);
-    pet->ClearUnitState(UNIT_STAT_ALL_DYN_STATES);
+    pet->ClearUnitState(UNIT_STATE_ALL_DYN_STATES);
     pet->SetHealth(uint32(pet->GetMaxHealth() * (damage / 100)));
 
     pet->AIM_Initialize();

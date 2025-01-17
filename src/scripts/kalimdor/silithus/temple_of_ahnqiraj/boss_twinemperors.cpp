@@ -238,7 +238,7 @@ struct boss_twinemperorsAI : public ScriptedAI
         justTeleported  = false;
         didPullDialogue = false;
         killSayCooldown = 0;
-        m_creature->ClearUnitState(UNIT_STAT_STUNNED);
+        m_creature->ClearUnitState(UNIT_STATE_STUNNED);
     }
 
     void MoveInLineOfSight(Unit *who) override

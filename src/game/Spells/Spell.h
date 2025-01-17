@@ -804,7 +804,7 @@ class ChannelResetEvent : public BasicEvent
     public:
         ChannelResetEvent(Unit* caster) : m_caster(caster)
         {
-            caster->AddUnitState(UNIT_STAT_PENDING_CHANNEL_RESET);
+            caster->AddUnitState(UNIT_STATE_PENDING_CHANNEL_RESET);
         }
         ~ChannelResetEvent() override {}
 

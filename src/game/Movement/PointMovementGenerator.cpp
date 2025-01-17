@@ -34,7 +34,7 @@ void PointMovementGenerator<T>::Initialize(T& unit)
     if (!unit.IsStopped())
         unit.StopMoving();
 
-    unit.AddUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
     Movement::MoveSplineInit init(unit, "PointMovementGenerator<T>::Initialize");
     init.MoveTo(m_x, m_y, m_z, m_options);
     if (m_speed > 0.0f)
@@ -57,14 +57,14 @@ void PointMovementGenerator<T>::Initialize(T& unit)
 template<class T>
 void PointMovementGenerator<T>::Finalize(T& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
     MovementInform(unit);
 }
 
 template<class T>
 void PointMovementGenerator<T>::Interrupt(T& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
 }
 
 template<class T>
@@ -73,7 +73,7 @@ void PointMovementGenerator<T>::Reset(T& unit)
     if (!unit.IsStopped())
         unit.StopMoving();
 
-    unit.AddUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
 }
 
 template<class T>
@@ -82,13 +82,13 @@ bool PointMovementGenerator<T>::Update(T& unit, uint32 const& /*diff*/)
     if (!&unit)
         return false;
 
-    if (unit.HasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    if (unit.HasUnitState(UNIT_STATE_CAN_NOT_MOVE))
     {
-        unit.ClearUnitState(UNIT_STAT_ROAMING_MOVE);
+        unit.ClearUnitState(UNIT_STATE_ROAMING_MOVE);
         return true;
     }
 
-    unit.AddUnitState(UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
     if (!unit.movespline->Finalized() && m_recalculateSpeed)
     {
@@ -152,13 +152,13 @@ bool DistancingMovementGenerator<T>::Update(T& unit, uint32 const& /*diff*/)
     if (!&unit)
         return false;
     
-    if (unit.HasUnitState(UNIT_STAT_CAN_NOT_MOVE))
+    if (unit.HasUnitState(UNIT_STATE_CAN_NOT_MOVE))
     {
-        unit.ClearUnitState(UNIT_STAT_ROAMING_MOVE);
+        unit.ClearUnitState(UNIT_STATE_ROAMING_MOVE);
         return false;
     }
     
-    unit.AddUnitState(UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
     if (!unit.movespline->Finalized() && m_recalculateSpeed)
     {
@@ -186,13 +186,13 @@ template bool DistancingMovementGenerator<Creature>::Update(Creature&, uint32 co
 
 void AssistanceMovementGenerator::Initialize(Creature& unit)
 {
-    if (unit.HasUnitState(UNIT_STAT_CAN_NOT_REACT | UNIT_STAT_CAN_NOT_MOVE))
+    if (unit.HasUnitState(UNIT_STATE_CAN_NOT_REACT | UNIT_STATE_CAN_NOT_MOVE))
         return;
 
     if (!unit.IsStopped())
         unit.StopMoving();
 
-    unit.AddUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
     Movement::MoveSplineInit init(unit, "AssistanceMovementGenerator::Initialize");
     init.MoveTo(m_x, m_y, m_z, (m_options & (MOVE_PATHFINDING | MOVE_FORCE_DESTINATION)));
     init.SetWalk(true);
@@ -202,7 +202,7 @@ void AssistanceMovementGenerator::Initialize(Creature& unit)
 
 void AssistanceMovementGenerator::Finalize(Creature& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
 
     unit.SetNoCallAssistance(false);
     unit.CallAssistance();
@@ -234,7 +234,7 @@ void ChargeMovementGenerator<T>::Initialize(T& unit)
     if (path.getPathType() & PATHFIND_NOPATH)
         return;
 
-    unit.AddUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
     unit.m_movementInfo.RemoveMovementFlag(MOVEFLAG_MASK_MOVING_OR_TURN);
     unit.m_movementInfo.ctime = 0;
 
@@ -249,12 +249,12 @@ void ChargeMovementGenerator<T>::Initialize(T& unit)
 template<class T>
 void ChargeMovementGenerator<T>::Finalize(T& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_ROOT))
-        unit.AddUnitState(UNIT_STAT_ROOT);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_STUNNED))
-        unit.AddUnitState(UNIT_STAT_STUNNED);
-    if (unit.HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_ROOT))
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_ROOT))
+        unit.AddUnitState(UNIT_STATE_ROOT);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_STUNNED))
+        unit.AddUnitState(UNIT_STATE_STUNNED);
+    if (unit.HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT))
         unit.SetRooted(true);
     if (m_triggerAttack)
         if (!unit.IsPlayer() || m_victimGuid == unit.ToPlayer()->GetSelectionGuid())
@@ -319,24 +319,24 @@ void ChargeMovementGenerator<T>::ComputePath(T& attacker, Unit& victim)
 template<class T>
 void ChargeMovementGenerator<T>::Interrupt(T& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_ROOT))
-        unit.AddUnitState(UNIT_STAT_ROOT);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_STUNNED))
-        unit.AddUnitState(UNIT_STAT_STUNNED);
-    if (unit.HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_ROOT))
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_ROOT))
+        unit.AddUnitState(UNIT_STATE_ROOT);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_STUNNED))
+        unit.AddUnitState(UNIT_STATE_STUNNED);
+    if (unit.HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT))
         unit.SetRooted(true);
 }
 
 template<class T>
 void ChargeMovementGenerator<T>::Reset(T& unit)
 {
-    unit.ClearUnitState(UNIT_STAT_ROAMING | UNIT_STAT_ROAMING_MOVE);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_ROOT))
-        unit.AddUnitState(UNIT_STAT_ROOT);
-    if (unit.HasUnitState(UNIT_STAT_PENDING_STUNNED))
-        unit.AddUnitState(UNIT_STAT_STUNNED);
-    if (unit.HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_ROOT))
+    unit.ClearUnitState(UNIT_STATE_ROAMING | UNIT_STATE_ROAMING_MOVE);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_ROOT))
+        unit.AddUnitState(UNIT_STATE_ROOT);
+    if (unit.HasUnitState(UNIT_STATE_PENDING_STUNNED))
+        unit.AddUnitState(UNIT_STATE_STUNNED);
+    if (unit.HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT))
         unit.SetRooted(true);
 }
 
@@ -352,7 +352,7 @@ bool ChargeMovementGenerator<T>::Update(T& unit, uint32 const& diff)
         return false;
     }
 
-    unit.AddUnitState(UNIT_STAT_ROAMING_MOVE);
+    unit.AddUnitState(UNIT_STATE_ROAMING_MOVE);
 
     if (!unit.movespline->Finalized() && m_recalculateSpeed)
     {

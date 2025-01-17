@@ -514,7 +514,7 @@ struct boss_sapphironAI : public ScriptedAI
                     if (m_creature->GetHealthPercent() > 10.0f)
                     {
                         events.Reset();
-                        m_creature->ClearUnitState(UNIT_STAT_MELEE_ATTACKING);
+                        m_creature->ClearUnitState(UNIT_STATE_MELEE_ATTACKING);
                         m_creature->InterruptNonMeleeSpells(false);
                         m_creature->GetMotionMaster()->Clear(false);
                         m_creature->GetMotionMaster()->MoveIdle();

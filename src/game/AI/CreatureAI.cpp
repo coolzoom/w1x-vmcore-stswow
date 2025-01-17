@@ -250,12 +250,12 @@ void CreatureAI::SetMeleeAttack(bool enabled)
     { 
         if (enabled)
         {
-            m_creature->AddUnitState(UNIT_STAT_MELEE_ATTACKING);
+            m_creature->AddUnitState(UNIT_STATE_MELEE_ATTACKING);
             m_creature->SendMeleeAttackStart(pVictim);
         } 
         else
         {
-            m_creature->ClearUnitState(UNIT_STAT_MELEE_ATTACKING);
+            m_creature->ClearUnitState(UNIT_STATE_MELEE_ATTACKING);
             m_creature->SendMeleeAttackStop(pVictim);
         }
     }
@@ -347,7 +347,7 @@ void CreatureAI::OnMoveInStealth(Unit* who)
 bool CreatureAI::CanTriggerAlert(Unit const* who)
 {
     // If this unit isn't an NPC, is already distracted, is in combat, is confused, stunned or fleeing, do nothing
-    if (m_creature->GetTypeId() != TYPEID_UNIT || m_creature->IsInCombat() || m_creature->HasUnitState(UNIT_STAT_NO_FREE_MOVE))
+    if (m_creature->GetTypeId() != TYPEID_UNIT || m_creature->IsInCombat() || m_creature->HasUnitState(UNIT_STATE_NO_FREE_MOVE))
         return false;
 
     // Only alert for hostiles!

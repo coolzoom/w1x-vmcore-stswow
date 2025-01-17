@@ -661,7 +661,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 amount, uint
                     //  15 seconds.In addition, retaliatory strikes will not be possible
                     //  while stunned.
 #if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
-                    if (HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+                    if (HasUnitState(UNIT_STATE_CAN_NOT_REACT))
                         return SPELL_AURA_PROC_FAILED;
 #endif
 

@@ -587,7 +587,7 @@ void AreaAura::Update(uint32 diff)
     {
         Unit* caster = GetTarget();
 
-        if (!caster->HasUnitState(UNIT_STAT_ISOLATED))
+        if (!caster->HasUnitState(UNIT_STATE_ISOLATED))
         {
             Unit* owner = caster->GetCharmerOrOwner();
             if (!owner)
@@ -843,7 +843,7 @@ void AreaAura::Update(uint32 diff)
         // or caster is (no longer) friendly
         bool needFriendly = (m_areaAuraType != AREA_AURA_ENEMY);
         if (!caster ||
-            caster->HasUnitState(UNIT_STAT_ISOLATED) ||
+            caster->HasUnitState(UNIT_STATE_ISOLATED) ||
             !caster->HasAura(originalRankSpellId, GetEffIndex()) ||
             !caster->IsWithinDistInMap(target, m_radius) ||
             caster->IsFriendlyTo(target) != needFriendly
@@ -1116,7 +1116,7 @@ void Aura::TriggerSpell()
     Unit* target = GetTarget();
 
     // not in banished state
-    if (triggerTarget->HasUnitState(UNIT_STAT_ISOLATED))
+    if (triggerTarget->HasUnitState(UNIT_STATE_ISOLATED))
         return;
 
     // specific code for cases with no trigger spell provided in field
@@ -1749,7 +1749,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                                 return;
 
                             caster->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                            caster->AddUnitState(UNIT_STAT_ROOT);
+                            caster->AddUnitState(UNIT_STATE_ROOT);
                         }
                         return;
                     }
@@ -1964,7 +1964,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 {
                     if (caster->GetTypeId() != TYPEID_UNIT)
                         return;
-                    caster->ClearUnitState(UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT);
+                    caster->ClearUnitState(UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT);
                     caster->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 }
                 return;
@@ -3200,7 +3200,7 @@ void Unit::ModPossess(Unit* pTarget, bool apply, AuraRemoveMode removeMode, Spel
 
         FactionTemplateEntry const* origFactionTemplate = pTarget->GetFactionTemplateEntry();
 
-        pTarget->AddUnitState(UNIT_STAT_POSSESSED);
+        pTarget->AddUnitState(UNIT_STATE_POSSESSED);
         pTarget->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
         pTarget->SetCharmerGuid(pCaster->GetObjectGuid());
         pTarget->SetPossessorGuid(pCaster->GetObjectGuid());
@@ -3229,7 +3229,7 @@ void Unit::ModPossess(Unit* pTarget, bool apply, AuraRemoveMode removeMode, Spel
 
         if (Creature* pCreature = pTarget->ToCreature())
         {
-            if (!pCreature->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+            if (!pCreature->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
                 if (pCreature->AI()->SwitchAiAtControl())
                     pCreature->AIM_Initialize();
         }
@@ -3244,7 +3244,7 @@ void Unit::ModPossess(Unit* pTarget, bool apply, AuraRemoveMode removeMode, Spel
         pTarget->ScheduleAINotify(0);
 
         pTarget->UpdateControl();
-        if (pTarget->HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED | UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT))
+        if (pTarget->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED | UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT))
             pTarget->SetRooted(true);
         pTarget->StopMoving();
         pTarget->SetWalk(pCaster->IsWalking());
@@ -3268,7 +3268,7 @@ void Unit::ModPossess(Unit* pTarget, bool apply, AuraRemoveMode removeMode, Spel
         if (removeMode == AURA_REMOVE_BY_DELETE)
             return;
 
-        pTarget->ClearUnitState(UNIT_STAT_POSSESSED);
+        pTarget->ClearUnitState(UNIT_STATE_POSSESSED);
         pTarget->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
         pTarget->SetCharmerGuid(ObjectGuid());
         pTarget->SetPossessorGuid(ObjectGuid());
@@ -3349,7 +3349,7 @@ void Player::ModPossessPet(Pet* pPet, bool apply, AuraRemoveMode m_removeMode)
 
     if (apply)
     {
-        pPet->AddUnitState(UNIT_STAT_POSSESSED);
+        pPet->AddUnitState(UNIT_STATE_POSSESSED);
 
         // Target should became visible at SetView call(if not visible before),
         // otherwise client will ignore packets from the target(SetClientControl for example).
@@ -3390,7 +3390,7 @@ void Player::ModPossessPet(Pet* pPet, bool apply, AuraRemoveMode m_removeMode)
         pPet->SetCharmerGuid(ObjectGuid());
         pPet->SetPossessorGuid(ObjectGuid());
 
-        if (!pPet->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+        if (!pPet->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
             pPet->StopMoving(true);
 
         // To avoid moving the wrong unit on server side between cancellation and mover swap
@@ -3756,7 +3756,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         if (GetSpellProto()->GetSpellSchoolMask() & SPELL_SCHOOL_MASK_FROST)
             target->ModifyAuraState(AURA_STATE_FROZEN, apply);
 
-        target->AddUnitState(inCharge ? UNIT_STAT_PENDING_STUNNED : UNIT_STAT_STUNNED);
+        target->AddUnitState(inCharge ? UNIT_STATE_PENDING_STUNNED : UNIT_STATE_STUNNED);
         target->SetTargetGuid(ObjectGuid());
         target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
 
@@ -3808,14 +3808,14 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         if (target->HasAuraType(SPELL_AURA_MOD_STUN))
             return;
 
-        target->ClearUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED);
+        target->ClearUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED);
         target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
 
 
         if (target->GetVictim() && target->IsAlive())
             target->SetTargetGuid(target->GetVictim()->GetObjectGuid());
 
-        if (!target->HasUnitState(UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT))         // prevent allow move if have also root effect
+        if (!target->HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT))         // prevent allow move if have also root effect
             target->SetRooted(false);
 
         // Wyvern Sting
@@ -4040,7 +4040,7 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
         if (GetSpellProto()->GetSpellSchoolMask() & SPELL_SCHOOL_MASK_FROST)
             target->ModifyAuraState(AURA_STATE_FROZEN, apply);
 
-        target->AddUnitState(inCharge ? UNIT_STAT_PENDING_ROOT : UNIT_STAT_ROOT);
+        target->AddUnitState(inCharge ? UNIT_STATE_PENDING_ROOT : UNIT_STATE_ROOT);
 
         //Save last orientation
         if (target->GetVictim())
@@ -4080,9 +4080,9 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
         if (target->HasAuraType(SPELL_AURA_MOD_ROOT))
             return;
 
-        target->ClearUnitState(UNIT_STAT_ROOT | UNIT_STAT_PENDING_ROOT);
+        target->ClearUnitState(UNIT_STATE_ROOT | UNIT_STATE_PENDING_ROOT);
 
-        if (!target->HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED))      // prevent allow move if have also stun effect
+        if (!target->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED))      // prevent allow move if have also stun effect
         {
             target->SetRooted(false);
             //target->SetUnitMovementFlags(MOVEFLAG_NONE);
@@ -4393,9 +4393,9 @@ void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
     if (Real && GetSpellProto()->Mechanic == MECHANIC_BANISH)
     {
         if (apply)
-            target->AddUnitState(UNIT_STAT_ISOLATED);
+            target->AddUnitState(UNIT_STATE_ISOLATED);
         else
-            target->ClearUnitState(UNIT_STAT_ISOLATED);
+            target->ClearUnitState(UNIT_STATE_ISOLATED);
     }
 }
 
@@ -6839,7 +6839,7 @@ void Aura::PeriodicDummyTick()
             // Judgement of Command
             if (spell->SpellIconID == 561)
             {
-                if (target && target->HasUnitState(UNIT_STAT_STUNNED))
+                if (target && target->HasUnitState(UNIT_STATE_STUNNED))
                 {
                     if (Unit* pCaster = GetCaster())
                     {

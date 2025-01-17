@@ -568,7 +568,7 @@ struct boss_onyxiaAI : public ScriptedAI
     void PhaseTransition(uint32 uiDiff, bool bDebut)
     {
 //        m_creature->CombatStop(true);
-        m_creature->ClearUnitState(UNIT_STAT_MELEE_ATTACKING);
+        m_creature->ClearUnitState(UNIT_STATE_MELEE_ATTACKING);
 
         /** P2 Event to take off */
         if (m_uiPhase == PHASE_TWO)

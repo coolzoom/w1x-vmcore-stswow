@@ -478,7 +478,7 @@ struct npc_corrupted_totemAI : ScriptedAI
 
     void Reset() override
     {
-        m_creature->AddUnitState(UNIT_STAT_ROOT);
+        m_creature->AddUnitState(UNIT_STATE_ROOT);
 
         if (!m_creature->HasAura(SPELL_ROOT_SELF))
             m_creature->AddAura(SPELL_ROOT_SELF);

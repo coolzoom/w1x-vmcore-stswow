@@ -780,7 +780,7 @@ namespace MaNGOS
             bool operator()(Unit* u)
             {
                 return u->IsAlive() && u->IsInCombat() && !i_obj->IsHostileTo(u) && !u->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE) &&
-                       i_obj->IsWithinDistInMap(u, i_range) && (u->IsCharmed() || u->IsFrozen() || u->HasUnitState(UNIT_STAT_CAN_NOT_REACT));
+                       i_obj->IsWithinDistInMap(u, i_range) && (u->IsCharmed() || u->IsFrozen() || u->HasUnitState(UNIT_STATE_CAN_NOT_REACT));
             }
         private:
             SpellCaster const* i_obj;

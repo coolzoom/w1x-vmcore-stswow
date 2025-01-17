@@ -141,7 +141,7 @@ void PetAI::MoveInLineOfSight(Unit* pWho)
 
 void PetAI::UpdateAI(uint32 const diff)
 {
-    if (!m_creature->IsAlive() || !m_creature->GetCharmInfo() || m_creature->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (!m_creature->IsAlive() || !m_creature->GetCharmInfo() || m_creature->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
         return;
 
     // part of it must run during eyes of the Beast to update melee hits
@@ -184,7 +184,7 @@ void PetAI::UpdateAI(uint32 const diff)
         return;
 
     // Creature could have died upon attacking (thorns aura for example), and lost charm aura. Abort.
-    if (!m_creature->IsAlive() || !m_creature->GetCharmInfo() || m_creature->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (!m_creature->IsAlive() || !m_creature->GetCharmInfo() || m_creature->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
         return;
 
     // Autocast (casted only in combat or persistent spells in any state)
@@ -459,7 +459,7 @@ void PetAI::OwnerAttackedBy(Unit* attacker)
         return;
 
     // In crowd control
-    if (m_creature->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (m_creature->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
         return;
 
     // Prevent pet from disengaging from current target
@@ -493,7 +493,7 @@ void PetAI::OwnerAttacked(Unit* target)
         return;
 
     // In crowd control
-    if (m_creature->HasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (m_creature->HasUnitState(UNIT_STATE_CAN_NOT_REACT))
         return;
 
     // Prevent pet from disengaging from current target
@@ -649,7 +649,7 @@ void PetAI::DoAttack(Unit* target, bool chase)
             // Make sure creature owner enters combat too
             if (Creature* pOwner = ToCreature(m_creature->GetCharmerOrOwner()))
             {
-                if (pOwner->IsAlive() && !pOwner->HasUnitState(UNIT_STAT_CAN_NOT_REACT) &&
+                if (pOwner->IsAlive() && !pOwner->HasUnitState(UNIT_STATE_CAN_NOT_REACT) &&
                     pOwner->IsValidAttackTarget(target, false))
                     pOwner->EnterCombatWithTarget(target);
             }

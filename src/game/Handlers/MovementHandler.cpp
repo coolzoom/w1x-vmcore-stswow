@@ -352,15 +352,15 @@ void WorldSession::HandleMovementOpcodes(WorldPacket& recvData)
     // this is here to accommodate 1.14 client behavior
     // it does not interrupt falling when rooted
     // verify that root is applied after having landed
-    if (pMover->HasUnitState(UNIT_STAT_ROOT_ON_LANDING))
+    if (pMover->HasUnitState(UNIT_STATE_ROOT_ON_LANDING))
     {
         if (movementInfo.HasMovementFlag(MOVEFLAG_ROOT) || !pMover->ShouldBeRooted())
-            pMover->ClearUnitState(UNIT_STAT_ROOT_ON_LANDING);
+            pMover->ClearUnitState(UNIT_STATE_ROOT_ON_LANDING);
         else if (!movementInfo.HasMovementFlag(MOVEFLAG_JUMPING | MOVEFLAG_FALLINGFAR))
         {
             sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "WorldSession::HandleMovementOpcodes: Player %s from account id %u has pending root on landing, but sent movement packet with opcode %u not containing root or falling flags!",
                 _player->GetName(), _player->GetSession()->GetAccountId(), opcode);
-            pMover->ClearUnitState(UNIT_STAT_ROOT_ON_LANDING);
+            pMover->ClearUnitState(UNIT_STATE_ROOT_ON_LANDING);
             pMover->SetRootedReal(true);
             KickPlayer();
             return;
@@ -746,14 +746,14 @@ void WorldSession::HandleMoveRootAck(WorldPacket& recvData)
         {
             sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "WorldSession::HandleMoveRootAck: Player %s from account id %u sent root apply ack, but continues falling. Using 1.14 client?",
                 _player->GetName(), _player->GetSession()->GetAccountId());
-            pMover->AddUnitState(UNIT_STAT_ROOT_ON_LANDING);
+            pMover->AddUnitState(UNIT_STATE_ROOT_ON_LANDING);
             return;
         }
     }
 
 
     // we need to always clear this on root packet for 1.14
-    pMover->ClearUnitState(UNIT_STAT_ROOT_ON_LANDING);
+    pMover->ClearUnitState(UNIT_STATE_ROOT_ON_LANDING);
 #endif
 
     pMover->SetRootedReal(applyReceived);
@@ -912,7 +912,7 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recvData)
         {
             if (Pet* pet = _player->GetPet())
             {
-                pet->ClearUnitState(UNIT_STAT_POSSESSED);
+                pet->ClearUnitState(UNIT_STATE_POSSESSED);
                 pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
                 // out of range pet dismissed
                 if (!pet->IsWithinDistInMap(_player, pet->GetMap()->GetGridActivationDistance()))

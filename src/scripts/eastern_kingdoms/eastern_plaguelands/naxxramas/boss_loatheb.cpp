@@ -147,7 +147,7 @@ struct mob_eyeStalkAI : public ScriptedAI
 
     void Reset() override
     {
-        m_creature->AddUnitState(UNIT_STAT_ROOT);
+        m_creature->AddUnitState(UNIT_STATE_ROOT);
         m_creature->StopMoving();
         m_creature->SetRooted(true);
         m_creature->SetNoCallAssistance(true);

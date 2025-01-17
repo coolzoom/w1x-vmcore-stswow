@@ -1588,7 +1588,7 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         }
     }
 
-    if (HasUnitState(UNIT_STAT_MELEE_ATTACKING))
+    if (HasUnitState(UNIT_STATE_MELEE_ATTACKING))
         UpdateMeleeAttackingState();
 
     if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING))
@@ -1767,7 +1767,7 @@ void Player::OnDisconnected()
     SetSplineDonePending(false);
     if (IsInWorld() && FindMap())
     {
-        if (!HasUnitState(UNIT_STAT_FLEEING | UNIT_STAT_CONFUSED | UNIT_STAT_TAXI_FLIGHT))
+        if (!HasUnitState(UNIT_STATE_FLEEING | UNIT_STATE_CONFUSED | UNIT_STATE_TAXI_FLIGHT))
         {
             // Delay because accessing map from WorldSession update can cause crashes.
             Player* pPlayer = this;
@@ -1782,15 +1782,15 @@ void Player::OnDisconnected()
             }, 1);
         }
 
-        if (HasUnitState(UNIT_STAT_ROOT_ON_LANDING))
+        if (HasUnitState(UNIT_STATE_ROOT_ON_LANDING))
         {
             SetRootedReal(ShouldBeRooted());
-            ClearUnitState(UNIT_STAT_ROOT_ON_LANDING);
+            ClearUnitState(UNIT_STATE_ROOT_ON_LANDING);
         }
 
         // Update position after bot takes over
         // And remove movement flags, so he doesn't run into the void
-        if (!GetMover()->HasUnitState(UNIT_STAT_FLEEING | UNIT_STAT_CONFUSED | UNIT_STAT_TAXI_FLIGHT))
+        if (!GetMover()->HasUnitState(UNIT_STATE_FLEEING | UNIT_STATE_CONFUSED | UNIT_STATE_TAXI_FLIGHT))
         {
             GetMover()->RemoveUnitMovementFlag(MOVEFLAG_MASK_MOVING_OR_TURN);
             GetMover()->SendHeartBeat(GetMover() != this);
@@ -2021,7 +2021,7 @@ void Player::AutoReSummonPet()
     pet->SetUInt32Value(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_NONE);
     pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
     pet->SetDeathState(ALIVE);
-    pet->ClearUnitState(UNIT_STAT_ALL_DYN_STATES);
+    pet->ClearUnitState(UNIT_STATE_ALL_DYN_STATES);
     pet->SetHealth(pet->GetMaxHealth());
 }
 
@@ -2936,7 +2936,7 @@ bool Player::CanInteractWithNPC(Creature const* pCreature, uint32 npcflagmask) c
         return false;
 
     // not in interactive state
-    if (HasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+    if (HasUnitState(UNIT_STATE_CAN_NOT_REACT_OR_LOST_CONTROL))
         return false;
 
     // appropriate npc type
@@ -3008,7 +3008,7 @@ bool Player::CanInteractWithGameObject(GameObject const* pGo, uint32 gameobject_
         return false;
 
     // not in interactive state
-    if (HasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+    if (HasUnitState(UNIT_STATE_CAN_NOT_REACT_OR_LOST_CONTROL))
         return false;
 
     if (!IsAlive())
@@ -10165,7 +10165,7 @@ InventoryResult Player::CanEquipItem(uint8 slot, uint16& dest, ItemPrototype con
         {
             // May be here should be more stronger checks; STUNNED checked
             // ROOT, CONFUSED, DISTRACTED, FLEEING this needs to be checked.
-            if (HasUnitState(UNIT_STAT_STUNNED | UNIT_STAT_PENDING_STUNNED))
+            if (HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_PENDING_STUNNED))
                 return EQUIP_ERR_YOU_ARE_STUNNED;
 
             // do not allow equipping gear except weapons, offhands, projectiles, relics in
@@ -17965,7 +17965,7 @@ Creature* Player::SummonPossessedMinion(uint32 creatureId, uint32 spellId, float
     pCreature->SetPossessorGuid(GetObjectGuid());
     pCreature->SetUInt32Value(UNIT_CREATED_BY_SPELL, spellId);          // set the spell id used to create this
     pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);          // set flag for client that mean this unit is controlled by a player
-    pCreature->AddUnitState(UNIT_STAT_POSSESSED);                       // also set internal unit state flag
+    pCreature->AddUnitState(UNIT_STATE_POSSESSED);                       // also set internal unit state flag
     pCreature->SetLevel(GetLevel());                                    // set level to same level than summoner TODO:: not sure its always the case...
     pCreature->SetWalk(IsWalking(), true);                              // sync the walking state with the summoner
     SetCharmGuid(pCreature->GetObjectGuid());                           // save guid of charmed creature
@@ -18004,7 +18004,7 @@ void Player::UnsummonPossessedMinion()
     SetClientControl(pMinion, false);
     pMinion->SetCharmerGuid(ObjectGuid());
     pMinion->SetPossessorGuid(ObjectGuid());
-    pMinion->ClearUnitState(UNIT_STAT_POSSESSED);
+    pMinion->ClearUnitState(UNIT_STATE_POSSESSED);
     pMinion->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
     pMinion->DoKillUnit();
 }
@@ -20287,7 +20287,7 @@ bool Player::IsHonorOrXPTarget(Unit const* pVictim) const
         if (((Creature const*)pVictim)->IsTotem() ||
             ((Creature const*)pVictim)->IsPet() ||
             ((Creature const*)pVictim)->GetCreatureInfo()->xp_multiplier==0 ||
-            pVictim->HasUnitState(UNIT_STAT_NO_KILL_REWARD))
+            pVictim->HasUnitState(UNIT_STATE_NO_KILL_REWARD))
             return false;
     }
     return true;
@@ -20790,7 +20790,7 @@ bool Player::CanUseBattleGroundObject() const
                //!HasStealthAura() &&                           // not stealthed
                //!HasInvisibilityAura() &&                      // not invisible
                IsAlive() &&                                   // live player
-               !HasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL)  // Nostalrius : en cecite ou fear par exemple
+               !HasUnitState(UNIT_STATE_CAN_NOT_REACT_OR_LOST_CONTROL)  // Nostalrius : en cecite ou fear par exemple
            );
 }
 

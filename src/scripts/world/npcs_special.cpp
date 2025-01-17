@@ -2238,7 +2238,7 @@ struct npc_oozeling_jubjubAI : public ScriptedPetAI
         if (type == POINT_MOTION_TYPE && id == 1)
         {
             m_creature->MonsterTextEmote(EMOTE_GUZZLE_ALE);
-            m_creature->AddUnitState(UNIT_STAT_ROOT);
+            m_creature->AddUnitState(UNIT_STATE_ROOT);
             m_uiReturnTimer = 3000;
         }
     }
@@ -2250,7 +2250,7 @@ struct npc_oozeling_jubjubAI : public ScriptedPetAI
             if (m_uiReturnTimer <= uiDiff)
             {
                 m_uiReturnTimer = 0;
-                m_creature->ClearUnitState(UNIT_STAT_ROOT);
+                m_creature->ClearUnitState(UNIT_STATE_ROOT);
 
                 if (GameObject* pMug = m_creature->FindNearestGameObject(OBJECT_DARK_IRON_MUG, 1.0f))
                 {

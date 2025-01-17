@@ -367,7 +367,7 @@ struct boss_ragnarosAI : ScriptedAI
                 {
                     if (itr->IsAlive())
                     {
-                        if (!itr->HasUnitState(UNIT_STAT_ISOLATED)) // banished
+                        if (!itr->HasUnitState(UNIT_STATE_ISOLATED)) // banished
                         {
                             Allbanished = false;
                             break;

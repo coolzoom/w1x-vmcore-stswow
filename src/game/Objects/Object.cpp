@@ -281,7 +281,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData& data, Player* target) c
     if (target == this)                                     // building packet for yourself
         updateFlags |= UPDATEFLAG_SELF;
 
-    if (IsUnit() && static_cast<Unit const*>(this)->HasUnitState(UNIT_STAT_MELEE_ATTACKING) && static_cast<Unit const*>(this)->GetVictim())
+    if (IsUnit() && static_cast<Unit const*>(this)->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && static_cast<Unit const*>(this)->GetVictim())
         updateFlags |= UPDATEFLAG_MELEE_ATTACKING;
 
     if (m_isNewObject)
@@ -310,7 +310,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData& data, Player* target) c
     buf << uint32(0); // TimerId
 
     // VictimGuid
-    if (IsUnit() && static_cast<Unit const*>(this)->HasUnitState(UNIT_STAT_MELEE_ATTACKING) && static_cast<Unit const*>(this)->GetVictim())
+    if (IsUnit() && static_cast<Unit const*>(this)->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && static_cast<Unit const*>(this)->GetVictim())
         buf << uint64(static_cast<Unit const*>(this)->GetVictim()->GetGUID());
     else
         buf << uint64(0);
@@ -2556,7 +2556,7 @@ public:
 
         float x, y, z;
 
-        if (!c->IsAlive() || c->HasUnitState(UNIT_STAT_NOT_MOVE) ||
+        if (!c->IsAlive() || c->HasUnitState(UNIT_STATE_NOT_MOVE) ||
             !c->GetMotionMaster()->GetDestination(x, y, z))
         {
             x = c->GetPositionX();

@@ -359,7 +359,7 @@ void WorldSession::HandleLootOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (_player->HasUnitState(UNIT_STAT_STUNNED))
+    if (_player->HasUnitState(UNIT_STATE_STUNNED))
     {
         _player->SendLootError(guid, LOOT_ERROR_STUNNED);
         return;

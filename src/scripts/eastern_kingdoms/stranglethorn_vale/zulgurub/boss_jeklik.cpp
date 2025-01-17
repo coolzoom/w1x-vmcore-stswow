@@ -116,7 +116,7 @@ struct boss_jeklikAI : public ScriptedAI
 
     void Aggro(Unit *who) override
     {
-        m_creature->AddUnitState(UNIT_STAT_IGNORE_PATHFINDING);
+        m_creature->AddUnitState(UNIT_STATE_IGNORE_PATHFINDING);
         DoScriptText(SAY_AGGRO, m_creature);
         m_creature->AddAura(SPELL_BAT_FORM);
         m_creature->SetFly(true);
