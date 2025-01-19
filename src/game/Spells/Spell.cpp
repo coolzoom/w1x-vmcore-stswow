@@ -7153,6 +7153,22 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 break;
             }
+            case SPELL_AURA_MOD_DISARM:
+            {
+                if (Creature* pTarget = ToCreature(m_targets.getUnitTarget()))
+                {
+                    if (!pTarget->CanUseEquippedWeapon(BASE_ATTACK) ||
+                        !pTarget->GetVirtualItemDisplayId(BASE_ATTACK) ||
+                        pTarget->GetVirtualItemClass(BASE_ATTACK) != ITEM_CLASS_WEAPON)
+                        return SPELL_FAILED_TARGET_NO_WEAPONS;
+                }
+                else if (Player* pTarget = ToPlayer(m_targets.getUnitTarget()))
+                {
+                    if (!pTarget->GetWeaponForAttack(BASE_ATTACK, true, true))
+                        return SPELL_FAILED_TARGET_NO_WEAPONS;
+                }
+                break;
+            }
             case SPELL_AURA_MOD_SHAPESHIFT:
             {
                 if (m_casterUnit && m_casterUnit->HasAura(23397)) // Ustaag <Nostalrius> : Nefarian Warrior Class Call
