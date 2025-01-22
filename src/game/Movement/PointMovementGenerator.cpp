@@ -280,7 +280,8 @@ void ChargeMovementGenerator<T>::ComputePath(T& attacker, Unit& victim)
     victim.GetPosition(victimPos.x, victimPos.y, victimPos.z);
 
     // Base path is to current victim position
-    path.calculate(victimPos.x, victimPos.y, victimPos.z, false);
+    m_forceDestination = attacker.HasUnitMovementFlag(MOVEFLAG_FALLINGFAR) && attacker.GetPositionZ() > victim.GetPositionZ();
+    path.calculate(victimPos.x, victimPos.y, victimPos.z, m_forceDestination);
 
     Player* victimPlayer = sWorld.getConfig(CONFIG_BOOL_ENABLE_MOVEMENT_EXTRAPOLATION_CHARGE) ?
         victim.ToPlayer() : nullptr;
@@ -305,7 +306,7 @@ void ChargeMovementGenerator<T>::ComputePath(T& attacker, Unit& victim)
         if (victimPlayer->ExtrapolateMovement(victimPlayer->m_movementInfo, m_extrapolateDelay, victimPos.x, victimPos.y, victimPos.z, o))
         {
             victim.UpdateAllowedPositionZ(victimPos.x, victimPos.y, victimPos.z);
-            path.calculate(victimPos.x, victimPos.y, victimPos.z, false);
+            path.calculate(victimPos.x, victimPos.y, victimPos.z, m_forceDestination);
             path.UpdateForMelee(&victim, m_meleeReach);
         }
     } 
@@ -357,7 +358,7 @@ bool ChargeMovementGenerator<T>::Update(T& unit, uint32 const& diff)
     if (!unit.movespline->Finalized() && m_recalculateSpeed)
     {
         m_recalculateSpeed = false;
-        path.calculate(path.getEndPosition().x, path.getEndPosition().y, path.getEndPosition().z, false);
+        path.calculate(path.getEndPosition().x, path.getEndPosition().y, path.getEndPosition().z, m_forceDestination);
         Initialize(unit);
     }
     return !unit.movespline->Finalized();
